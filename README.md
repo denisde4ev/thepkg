@@ -1,0 +1,2 @@
+# thepkg
+suckless package manager
