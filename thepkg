@@ -1,0 +1,47 @@
+#!/bin/sh
+THEPKG_PREFIX=/data/data/com.termux/files/home/0/thepkg/test
+
+log() { printf %s\\n " -> $*"; }
+err() { i=$?; printf %s\\n >&2 " x> $*"; exit $i; }
+
+set -ue
+<<:
+"${THEPKG_PREFIX=/}"\
+"${THEPKG_DBPATH=$THEPKG_PREFIX/var/db/thepkg}"\
+
+:
+unset pkgname
+
+case $1 in
+add)
+	case $2 in -) set -- add "$(mktemp)"; cat > "$2"; esac
+	# hope we wont get muliple lines/packages in grep
+	pkgname=$(
+		tar tf "$2" | grep -x "${THEPKG_DBPATH#"$THEPKG_PREFIX/"}"'/[^/]*/version'
+	) || err "Not a valid thepkg package"
+	pkgname=${pkgname%/version}
+	pkgname=${pkgname##*/}
+
+	[ ! -e "$THEPKG_DBPATH/${pkgname:?}" ] || \
+		err "The pkg '$pkgname' is already installed"
+
+	log "Extracting the pkg '$pkgname'..."
+	tar xf "$2" -C "$THEPKG_PREFIX"
+	tar tf "$2" | sort -r >"$THEPKG_PREFIX/$pkgname"/manifest
+	;;
+del)
+	cd "$THEPKG_PREFIX" || exit
+	log "Removing the pkg '$2'..."
+	while IFS= read -r file; do
+		case $file in
+		*/)
+			rmdir "$file" 2>/dev/null||:
+			;;
+		*)
+			rm "$file"
+			;;
+		esac
+	done <"$THEPKG_DBPATH"/"$2"/manifest
+	rm "$THEPKG_DBPATH"/"$2"/manifest
+	rmdir "$THEPKG_DBPATH"/"$2"
+esac
