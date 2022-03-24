@@ -1,22 +1,19 @@
 #!/bin/sh
-THEPKG_PREFIX=/data/data/com.termux/files/home/0/thepkg/test
-
-log() { printf %s\\n " -> $*"; }
-err() { i=$?; printf %s\\n >&2 " x> $*"; exit $i; }
+: "{THEPKG_PREFIX?}" # still experimental, dont use it on real root '/'
 
 set -ue
 <<:
-"${THEPKG_PREFIX=/}"\
-"${THEPKG_DBPATH=$THEPKG_PREFIX/var/db/thepkg}"\
-
+"${THEPKG_PREFIX=/}"
+"${THEPKG_DBPATH=$THEPKG_PREFIX/var/db/thepkg}"
 :
 
-unset pkgname
+log() { printf ' -> %s\n' "$@"; }
+err() { i=$?; printf ' x> %s\n' "$@" >&2; exit $i; }
 
+
+unset pkgname
 case $1 in
 add)
-	case $2 in -) set -- add "$(mktemp)"; cat > "$2"; esac
-	# hope we wont get muliple lines/packages in grep
 	pkgname=$(
 		tar tf "$2" | \
 		grep -x "${THEPKG_DBPATH#"$THEPKG_PREFIX/"}"'/[^/]*/version'
@@ -28,8 +25,11 @@ add)
 		err "The pkg '$pkgname' is already installed"
 
 	log "Extracting the pkg '$pkgname'..."
-	tar xf "$2" -C "$THEPKG_PREFIX"
-	tar tf "$2" | sort -r >"$THEPKG_PREFIX/$pkgname"/manifest
+	{
+		mkdir -p "$THEPKG_DBPATH/$pkgname"
+		tar xvf "$2" -C "$THEPKG_PREFIX" | \
+		sort -r >"$THEPKG_DBPATH/$pkgname"/manifest
+	} || err "Failed to install the pkg '$pkgname'!"
 	;;
 del)
 	cd "$THEPKG_PREFIX" || exit
