@@ -10,6 +10,7 @@ set -ue
 "${THEPKG_DBPATH=$THEPKG_PREFIX/var/db/thepkg}"\
 
 :
+
 unset pkgname
 
 case $1 in
@@ -17,7 +18,8 @@ add)
 	case $2 in -) set -- add "$(mktemp)"; cat > "$2"; esac
 	# hope we wont get muliple lines/packages in grep
 	pkgname=$(
-		tar tf "$2" | grep -x "${THEPKG_DBPATH#"$THEPKG_PREFIX/"}"'/[^/]*/version'
+		tar tf "$2" | \
+		grep -x "${THEPKG_DBPATH#"$THEPKG_PREFIX/"}"'/[^/]*/version'
 	) || err "Not a valid thepkg package"
 	pkgname=${pkgname%/version}
 	pkgname=${pkgname##*/}
@@ -34,12 +36,8 @@ del)
 	log "Removing the pkg '$2'..."
 	while IFS= read -r file; do
 		case $file in
-		*/)
-			rmdir "$file" 2>/dev/null||:
-			;;
-		*)
-			rm "$file"
-			;;
+		*/) rmdir "$file" 2>/dev/null||:;;
+		*) rm "$file";;
 		esac
 	done <"$THEPKG_DBPATH"/"$2"/manifest
 	rm "$THEPKG_DBPATH"/"$2"/manifest
