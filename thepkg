@@ -1,87 +1,42 @@
 #!/bin/sh
 
 # : "${THEPKG_PREFIX=/data/data/com.termux/files/home/0/thepkg/test}"
-: "${THEPKG_PREFIX=./opt}"
-: "${THEPKG_DBPATH=$THEPKG_PREFIX/../var/db/thepkg}"
-
-# false && {
-# printf %s\\n >&2 \
-	# "using config:" \
-	# " THEPKG_PREFIX=$THEPKG_PREFIX" \
-	# " THEPKG_DBPATH=$THEPKG_DBPATH" \
-	# "" \
-	# "(Press enter or Ctrl+C to stop)" \
-# ;
-# head -n1
-# set -x # use debugging
-# }
+: "${THEPKG_PREFIX:=./opt}"
+: "${THEPKG_DBPATH:=$THEPKG_PREFIX/../var/db/thepkg}"
 
 ## config end ##
 set -ue
 
 log() { printf %s\\n " -> $*"; }
-err() { i=$?; printf %s\\n >&2 " x> $*"; exit $i; }
+err() { printf %s\\n >&2 " x> $*"; exit ${2-2}; }
 
 
-[ -d "${THEPKG_PREFIX=/}" ] || \
-	err "THEPKG_PREFIX is not a directory"
-[ -d "${THEPKG_DBPATH=$THEPKG_PREFIX/var/db/thepkg}" ] || \
-	err "THEPKG_DBPATH is not a directory"
-
-case ${1-} in
-	'') err "use --help for usage";;
-	--version) printf %s\\n "pre-release"; exit;;
-	--help|-h) printf %s\\n "Usage: ${0##*/} [--name='THEPKG-NAME'] <add|del> <./THEPKG-NAME.thepkg.tar|->" ; exit;;
-esac
-
-
-unset pkgname
-
-case $1 in
-	--name=*) pkgname=${1#--name=}; shift;;
-	*)
-		case $2 in
-			[a-zA-Z]*.thepkg.tar)   pkgname=${2%.thepkg.tar};;
-			[a-zA-Z]*.thepkg.tar.*) pkgname=${2%.thepkg.tar.*};;
-		esac
-	;;
-esac
-
-case $1 in
+case ${1-"please specify action add/del"} in
 add)
-	case $pkgname in *[!a-zA-Z0-9_-]*|-?*)
-		err "the pkgname is not valid: pkgname='${pkgname}'"
+	case ${1-} in
+		--name=*) thepkgname=${1#--name=}; shift;;
+		*) case $2 in */*@*.tar*) thepkgname=${2##*/}; thepkgname=${thepkgname%%"@"*};; *)
 	esac
-
-	[ ! -e "$THEPKG_DBPATH/${pkgname:?"Can not detect thepkg name, consider using --name='THEPKG-NAME' argument"}" ] || \
-		err "The pkg '$pkgname' is already installed"
-	mkdir -v "$THEPKG_DBPATH/$pkgname"
-
-	log "Extracting the pkg '$pkgname'..."
-	tar axvf "$2" -C "$THEPKG_PREFIX" | sort -r >"$THEPKG_DBPATH/$pkgname"/manifest
+	[ ! -e "$THEPKG_DBPATH/${thepkgname:?"missing or empty thepkgname, use --name=THEPKGNAME"}" ] || \
+		err "The pkg '$thepkgname' is already installed" $?
+	mkdir -v "$THEPKG_DBPATH/$thepkgname"
+	log "Extracting the pkg '$thepkgname'..."
+	tar xvf "${2:?"please specify path"}" -k -C "$THEPKG_PREFIX" | sort -r >"$THEPKG_DBPATH/$thepkgname"/manifest
+	# -k  don’t replace existing files, treat them as errors
 	;;
 del)
-	log "Removing the pkg${pkgname+" '$pkgname'"}..."
-	thepkg_del() { (
-		cd "$THEPKG_PREFIX" || exit
-		while IFS= read -r file; do
-			case $file in
-				*/) rmdir "$file" 2>/dev/null||: ;;
-				*) rm "$file";;
-			esac
-		done
-	) }
-	case ${pkgname+x} in
-		x)
-			case ${2+x} in
-			x)
-				tar tf "$2" | sort -r | diff - "$THEPKG_DBPATH/${pkgname:?}"/manifest
-			esac
-			thepkg_del <"$THEPKG_DBPATH/${pkgname:?}"/manifest
-			rm "$THEPKG_DBPATH/$pkgname"/manifest
-			rmdir "$THEPKG_DBPATH/$pkgname"
-		;;
-		*) tar tf "$2" | thepkg_del;;
-	esac
+	thepkgname=${2:-"missing or empty thepkgname"}
+	cd "$THEPKG_PREFIX" || exit
+	log "Removing the pkg '$thepkgname'..."
+	while IFS= read -r file; do
+		case $file in
+			*/) rmdir "$file" 2>/dev/null||: ;;
+			*) rm "$file";;
+		esac
+	done <"$THEPKG_DBPATH/$thepkgname"/manifest
+	rm "$THEPKG_DBPATH/$thepkgname"/manifest
+	rmdir "$THEPKG_DBPATH/$thepkgname"
 	;;
+--help) log "Usage ${0##*/} [--name=THEPKGNAME] <add/del> <file@ver.tar/THEPKGNAME>";;
+*) err "use --help";;
 esac
