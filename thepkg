@@ -14,10 +14,6 @@ log() { printf %s\\n " -> $*"; }
 err() { printf %s\\n >&2 " x> $*"; exit ${2-2}; }
 
 
-main() {
-
-
-
 action=${1-"please specify action add/del"}; shift
 
 case $action in
@@ -36,14 +32,7 @@ add)
 
 	# arg [ -s "$THEPKG_DBPATH/$thepkgname"/manifest ]
 	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
-		log "Extracding went wrong"
-		if
-			[ -d "$THEPKG_DBPATH/$thepkgname" ] && \
-			command -v YN_confirm >/dev/null 2>&1 && \
-			YN_confirm y "Remove the pkg?"
-		then
-			main del "$thepkgname"
-		fi
+		log "Extracding the pkg went wrong"
 	}
 	# tar -k    don’t replace existing files, treat them as errors
 	# test -s   exists and has a size greater than zero
@@ -66,8 +55,3 @@ del)
 --help) log "Usage ${0##*/} [--name=THEPKGNAME] <add/del> <file@ver.tar/THEPKGNAME>";;
 *) err "use --help";;
 esac
-
-
-
-}
-main "$@"
