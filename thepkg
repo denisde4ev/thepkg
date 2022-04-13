@@ -26,15 +26,13 @@ add)
 		--name=*) thepkgname=${1#--name=}; shift;;
 		*) case $2 in */*@*.tar*) thepkgname=${2##*/}; thepkgname=${thepkgname%%"@"*};; esac
 	esac
-	case ${1:?"please specify path"} in
-		-) tar_from_stdin='';;
-		*) unset tar_from_stdin='';;
-	esac
+	: "${1:?"please specify path"}"
+
 	[ ! -e "$THEPKG_DBPATH/${thepkgname:?"missing or empty thepkgname, use --name=THEPKGNAME"}" ] || \
 		err "The pkg '$thepkgname' is already installed" $?
 	mkdir "$THEPKG_DBPATH/$thepkgname"
 	log "Extracting the pkg '$thepkgname'..."
-	tar axv${tar_from_stdin+f "$1"} -k -C "$THEPKG_PREFIX" | sort -r >"$THEPKG_DBPATH/$thepkgname"/manifest
+	tar axvf "$1" -k -C "$THEPKG_PREFIX" | sort -r >"$THEPKG_DBPATH/$thepkgname"/manifest
 
 	# arg [ -s "$THEPKG_DBPATH/$thepkgname"/manifest ]
 	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
