@@ -7,36 +7,69 @@
 ## config end ##
 set -ue
 
+[ -d "$THEPKG_PREFIX" ] || mkdir -pv "$THEPKG_PREFIX"
+[ -d "$THEPKG_DBPATH" ] || mkdir -pv "$THEPKG_DBPATH"
+
 log() { printf %s\\n " -> $*"; }
 err() { printf %s\\n >&2 " x> $*"; exit ${2-2}; }
 
 
-case ${1-"please specify action add/del"} in
+main() {
+
+
+
+action=${1-"please specify action add/del"}; shift
+
+case $action in
 add)
 	case ${1-} in
 		--name=*) thepkgname=${1#--name=}; shift;;
-		*) case $2 in */*@*.tar*) thepkgname=${2##*/}; thepkgname=${thepkgname%%"@"*};; *)
+		*) case $2 in */*@*.tar*) thepkgname=${2##*/}; thepkgname=${thepkgname%%"@"*};; esac
+	esac
+	case ${1:?"please specify path"} in
+		-) tar_from_stdin='';;
+		*) unset tar_from_stdin='';;
 	esac
 	[ ! -e "$THEPKG_DBPATH/${thepkgname:?"missing or empty thepkgname, use --name=THEPKGNAME"}" ] || \
 		err "The pkg '$thepkgname' is already installed" $?
-	mkdir -v "$THEPKG_DBPATH/$thepkgname"
+	mkdir "$THEPKG_DBPATH/$thepkgname"
 	log "Extracting the pkg '$thepkgname'..."
-	tar xvf "${2:?"please specify path"}" -k -C "$THEPKG_PREFIX" | sort -r >"$THEPKG_DBPATH/$thepkgname"/manifest
-	# -k  don’t replace existing files, treat them as errors
+	tar axv${tar_from_stdin+f "$1"} -k -C "$THEPKG_PREFIX" | sort -r >"$THEPKG_DBPATH/$thepkgname"/manifest
+
+	# arg [ -s "$THEPKG_DBPATH/$thepkgname"/manifest ]
+	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
+		log "Extracding went wrong"
+		if
+			[ -d "$THEPKG_DBPATH/$thepkgname" ] && \
+			command -v YN_confirm >/dev/null 2>&1 && \
+			YN_confirm y "Remove the pkg?"
+		then
+			main del "$thepkgname"
+		fi
+	}
+	# tar -k    don’t replace existing files, treat them as errors
+	# test -s   exists and has a size greater than zero
 	;;
 del)
-	thepkgname=${2:-"missing or empty thepkgname"}
-	cd "$THEPKG_PREFIX" || exit
+	thepkgname=${1:?"missing or empty thepkgname"}
 	log "Removing the pkg '$thepkgname'..."
-	while IFS= read -r file; do
-		case $file in
-			*/) rmdir "$file" 2>/dev/null||: ;;
-			*) rm "$file";;
-		esac
-	done <"$THEPKG_DBPATH/$thepkgname"/manifest
+	(
+		cd "$THEPKG_PREFIX" || exit
+		while IFS= read -r file; do
+			case $file in
+				*/) rmdir "$file" 2>/dev/null||: ;;
+				*) rm "$file";;
+			esac
+		done
+	) < "$THEPKG_DBPATH/$thepkgname"/manifest
 	rm "$THEPKG_DBPATH/$thepkgname"/manifest
 	rmdir "$THEPKG_DBPATH/$thepkgname"
 	;;
 --help) log "Usage ${0##*/} [--name=THEPKGNAME] <add/del> <file@ver.tar/THEPKGNAME>";;
 *) err "use --help";;
 esac
+
+
+
+}
+main "$@"
