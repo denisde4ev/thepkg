@@ -9,38 +9,61 @@ set -e
 [ -d "${THEPKG_PREFIX:?}" ] || mkdir -pv "$THEPKG_PREFIX"
 [ -d "${THEPKG_DBPATH:?}" ] || mkdir -pv "$THEPKG_DBPATH"
 
-log() { printf %s\\n " -> $*"; }
-err() { printf %s\\n >&2 " x> $*"; exit ${2-2}; }
+log() { printf %s\\n " -> $1"; }
+err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; }
+
 
 # args parsing:
-action=${1-"please specify action add/del"}
-shift
 case $1 in
-	'') err "missing or empty thepkgname";;
-	*/*|*@*.tar*)
-		thepkgname=${1##*/};
-		thepkgname=${thepkgname%%".tar"*}
-		thepkgname=${thepkgname%%"@"*}
-	;;
-	*) thepkgname=$1;;
+	-h|--help) printf %s\\n "Usage: ${0##*/} <add|del> </path/to/thepkgname@v1.0.0.tar.qz | thepkgname@v1.0.0.tar | thepkgname>"; exit;;
+	'') err "specify action add/del";;
+esac
+case $1 in
+	add|del) action=$1;;
+	*)err "use --help";;
+esac
+shift
+thepkgname=${1##*/};
+unset tar_file
+case $1 in
+'')
+	err "missing or empty thepkgname";;
+*/*|*.tar|*.tar.*)
+	# note: for `thepkg del thepkgname.tar`
+	# will not look at the tar file at all,
+	# just detects the name from the name and removes it
+	tar_file=$1
+	thepkgname=${thepkgname%%".tar"*}
+	thepkgname=${thepkgname%%"@"*}
+;;
 esac
 
+
 case $action in
---help) log "Usage: ${0##*/} <add|del> </path/to/thepkgname@v1.0.0.tar.qz | thepkgname>";;
 add)
 	[ ! -e "$THEPKG_DBPATH/$thepkgname" ] || {
 		err "The pkg '$thepkgname' is already installed" 2
 	}
-	mkdir "$THEPKG_DBPATH/$thepkgname"
 	log "Extracting the pkg '$thepkgname'..."
-	tar -axvf "$1" -k -C "$THEPKG_PREFIX" | \
+	mkdir -v "$THEPKG_DBPATH/$thepkgname"
+	# tar -k    don’t replace existing files, treat them as errors
+	tar -axvf "${tar_file-"-"}" -k -C "$THEPKG_PREFIX" | tee /dev/stderr | \
 	sort -r > "$THEPKG_DBPATH/$thepkgname"/manifest
 
-	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
-		err "Extracding the pkg went wrong" $?
-	}
-	# tar -k    don’t replace existing files, treat them as errors
 	# test -s   exists and has a size greater than zero
+	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
+		# detect when went wrong
+		# reason: `tar` is ran in pipe
+		# and exit status is lost in POSIX sh
+		# then exit status would be 0
+
+		printf ' x> %s\n' >&2 \
+			"Extracding the pkg went wrong." \
+			"To remove the empty pkg installed," \
+			"  please run: ${0##*/} del '$thepkgname'" \
+		;
+		exit 3
+	}
 	;;
 del)
 	[ -e "$THEPKG_DBPATH/$thepkgname" ] || {
@@ -51,13 +74,13 @@ del)
 		cd "$THEPKG_PREFIX" || exit
 		while IFS= read -r file; do
 			case $file in
-				*/) rmdir "$file" 2>/dev/null||:;;
-				*) rm "$file";;
+				*/) rmdir -v "$file" 2>/dev/null||:;;
+				*) rm -v "$file";;
 			esac
 		done
 	) < "$THEPKG_DBPATH/$thepkgname"/manifest
-	rm "$THEPKG_DBPATH/$thepkgname"/manifest
-	rmdir "$THEPKG_DBPATH/$thepkgname"
+	rm -v "$THEPKG_DBPATH/$thepkgname"/manifest
+	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
 *) err "use --help";;
 esac
