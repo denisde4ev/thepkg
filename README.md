@@ -1,2 +1,2 @@
 # thepkg
-suckless package manager
+simple package manager
