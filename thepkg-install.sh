@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# curl https://github.com/denisde4ev/thepkg/raw/master/thepkg-install.sh | THEPKG_PREFIX=/ THEPKG_DBPATH=/var/db/thepkg sh -x
+# curl -L https://github.com/denisde4ev/thepkg/raw/master/thepkg-install.sh | THEPKG_PREFIX=/ THEPKG_DBPATH=/var/db/thepkg sh -x
 
 (
 set -eu
@@ -16,7 +16,7 @@ curl -L https://github.com/denisde4ev/thepkg/raw/master/thepkg > "${THEPKG_PREFI
 chmod 755 "${THEPKG_PREFIX}/bin/thepkg"
 
 # todo: patch the prefis and dbpath of thepkg
-patch --forward --strip=1 thepkg << EOF
+patch --forward --strip=1 "${THEPKG_PREFIX}/bin/thepkg" << EOF
 --- thepkg.old	2022-05-01
 +++ thepkg.new	2022-05-01
 @@ -4,2 +4,2 @@
