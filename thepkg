@@ -23,6 +23,7 @@ case $1 in
 	-h|--help)
 		printf %s\\n \
 			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
+			"" \
 			"patches applyed:" \
 		; # [patches] help message patches -> patches applyed
 		exit
@@ -31,7 +32,7 @@ case $1 in
 esac
 
 # thepkg args parsing loop:
-# [patch: thepkg-args-parsing] thepkg args parsing loop
+# [patch: thepkg-args-parsing-loop] thepkg args parsing loop
 
 case $1 in
 	add|del) action=$1;;
@@ -43,9 +44,7 @@ shift
 # thepkg file detection:
 # [patch: thepkg-addfromtar] thepkg file detection
 case $1 in
-'')
-	err "please specify thepkgname or see --help"
-;;
+	'') err "please specify thepkgname or see --help";;
 # [patch: thepkg-addfromtar] thepkg file detection -> case
 esac
 
@@ -67,11 +66,15 @@ add)
 	{
 		{
 			# tar -k    don't replace existing files, treat them as errors
-			tar -xvf - -k -C "$THEPKG_PREFIX"
+			# manifest writing -> pre tar extractind
+			tar -xvf - -k -C "$THEPKG_PREFIX" # [patch: thepkg-addfromtar]
+			# manifest writing -> post tar extractind
 		} | {
 			tee /dev/stderr
 		} | {
+			# manifest writing -> pre sort
 			sort -r
+			# manifest writing -> post sort
 		}
 		# [patch: thepkg-metadata-thepkg-ext] manifest writing
 		# [patch: thepkg-thepkgver-arg-parsing] manifest writing
