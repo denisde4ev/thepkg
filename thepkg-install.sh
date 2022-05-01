@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # curl -L https://github.com/denisde4ev/thepkg/raw/master/thepkg-install.sh | THEPKG_PREFIX=/ THEPKG_DBPATH=/var/db/thepkg sh -x
+# wget -O- https://github.com/denisde4ev/thepkg/raw/master/thepkg-install.sh | THEPKG_PREFIX=/ THEPKG_DBPATH=/var/db/thepkg sh -x
 
 (
 set -eu
@@ -22,8 +23,8 @@ patch --forward --strip=1 "${THEPKG_PREFIX}/bin/thepkg" << EOF
 @@ -4,2 +4,2 @@
 -: "\${THEPKG_PREFIX:=./opt}"
 -: "\${THEPKG_DBPATH:=\$THEPKG_PREFIX/../var/db/thepkg}"
-+: "\${THEPKG_PREFIX:='$THEPKG_PREFIX'}"
-+: "\${THEPKG_DBPATH:='$THEPKG_PREFIX'}"
++: "\${THEPKG_PREFIX:="$THEPKG_PREFIX"}"
++: "\${THEPKG_DBPATH:="$THEPKG_DBPATH"}"
 EOF
 
 printf %s\\n "${THEPKG_PREFIX}/bin/thepkg" >> "${THEPKG_DBPATH}/thepkg/manifest"
