@@ -2,3 +2,11 @@ opt
 var
 test
 out
+
+
+**/src/
+**/pkg/
+**/*.tar
+**/*.tar.*
+**/*.thepkg
+**/*.thepkg.*
