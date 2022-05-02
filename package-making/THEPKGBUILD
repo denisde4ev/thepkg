@@ -1,0 +1,21 @@
+#!/bin/sh
+
+thepkgname=thepkg
+pkgver=1.0.0
+pkgrel= # todo
+pkgdesc="simple package manager"
+source="$thepkgname"
+checksum="SKIP"
+arch="any"
+depends="sh coreutils tar"
+
+package() {
+	cd "$srcdir"
+
+	install -Dm755 thepkg bin/thepkg
+}
+
+
+
+
+. "${0%/*}"/makethepkg
