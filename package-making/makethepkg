@@ -4,6 +4,9 @@ set -eu
 # unset opt_i
 opt_i=''
 
+# unset opt_f
+opt_f=''
+
 _makethepkg_log() { printf %s\\n " -> $1"; }
 _makethepkg_err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; }
 
@@ -11,19 +14,20 @@ false && case ${FAKEROOTKEY+x} in '')
 	_makethepkg_err "please run this script in fakeroot. (or set FAKEROOTKEY env to bypass this check)" 3
 esac
 
-unset _thepkgbuild_runned
+unset _makethepkg_runned
 case $0 in
 	*/THEPKGBUILD)
-		_thepkgbuild_runned=''
+		_makethepkg_runned=''
 		startdir=${0%/*}
 	;;
 	# TODO: parse path opion
 	*)
-		[ -f THEPKGBUILD ] || {
+		[ -f ./THEPKGBUILD ] || {
 			_makethepkg_err "can not find THEPKGBUILD file" 1
 		}
 
 		startdir=.
+	;;
 esac
 
 cd "$startdir" || exit
@@ -33,17 +37,50 @@ case $startdir in /*) ;; *) startdir=$PWD/$startdir;; esac # startdir must be ab
 startdir=${startdir%/.}
 
 [ -d src ] || mkdir src; srcdir=$startdir/src
-[ -d pkg ] || mkdir pkg; pkgdir=$startdir/pkg
+if [ -d pkg ]; then
+	case ${opt_f+f} in '')
+		_makethepkg_log 'PACKAGE ALREADY BILD, exiting'
+		exit 0
+	esac
+else
+	mkdir pkg
+fi
+pkgdir=$startdir/pkg
 
+case ${_makethepkg_runned+x} in '')
+	. ./THEPKGBUILD
+esac
+
+# test -s   exists and has a size greater than zero
+if ! [ -s "$srcdir/${source%%" "*}" ]; then
+	_makethepkg_log "downloading/(copying) sources..."
+	(
+	set -feu
+	for i in $source; do
+		ln -s "$PWD/$i" "$srcdir/"
+	done
+	unset i
+	)
+else
+	_makethepkg_log "source is already downloaded/(copied), skiping"
+fi
 
 (
 	set -eu
 	cd "$pkgdir"
 
-	case $(command -v package) in package) package;; *)
-		_makethepkg_err "missing 'package' fn" 1
+	case $(command -v package) in
+		package)
+			_makethepkg_log "packaging..."
+			package
+		;;
+		*)
+			_makethepkg_err "missing 'package' fn" 1
+		;;
 	esac
 )
+
+_makethepkg_log "packing to tar..."
 (
 	set -eu
 	cd "$pkgdir"
@@ -51,13 +88,15 @@ startdir=${startdir%/.}
 )
 
 case ${opt_i+i} in i)
-	### case ${USER:-$(id -un)} in root) # TODO: BAD CHECK, WE ARE IN FKEROOT HERE...
+	###case ${USER:-$(id -un)} in root) # TODO: BAD CHECK, WE ARE IN FAKEROOT HERE...
+		_makethepkg_log "installing..."
+
 		if command -v sudo 2>/dev/null 1>&2; then
-			sudo thepkg add "$thepkgname" < "$startdir"/"$thepkgname".tar
+			arg  sudo thepkg add "$thepkgname" < "$startdir"/"$thepkgname".tar
 		# [patch makethepkg-doas] |=> elif command -v doas 2>/dev/null 1>&2; then
 		# [patch makethepkg-doas] |=> 	doas thepkg add "$thepkgname" < "$startdir"/"$thepkgname".tar
 		else
-			su -c "thepkg add '$thepkgname' < '$startdir/$thepkgname.tar'"
+			arg  su -c "thepkg add '$thepkgname' < '$startdir/$thepkgname.tar'"
 		fi
 	###esac
 esac

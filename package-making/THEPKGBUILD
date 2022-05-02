@@ -1,21 +1,26 @@
 #!/bin/sh
 
-thepkgname=thepkg
+thepkgname=hello-wold
 pkgver=1.0.0
-pkgrel= # todo
-pkgdesc="simple package manager"
-source="$thepkgname"
-checksum="SKIP"
+pkgrel=1
+pkgdesc="hello-wold"
+
 arch="any"
 depends="sh coreutils tar"
+
+source="$thepkgname"
+checksum="SKIP"
+
 
 package() {
 	cd "$srcdir"
 
-	install -Dm755 thepkg bin/thepkg
+	install -Dm755 "$thepkgname" "$pkgdir"/bin/"$thepkgname"
 }
 
 
 
 
-. "${0%/*}"/makethepkg
+case $0 in THEPKGBUILD|*/THEPKGBUILD)
+	. "${0%/*}"/makethepkg
+esac
