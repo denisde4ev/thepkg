@@ -1,12 +1,12 @@
 #!/bin/sh
 
 # : "${THEPKG_PREFIX=/data/data/com.termux/files/home/0/thepkg/test}"
-: "${THEPKG_PREFIX:=./opt}"
-: "${THEPKG_DBPATH:=$THEPKG_PREFIX/../var/db/thepkg}"
+: "${THEPKG_PREFIX:=""}"
+: "${THEPKG_DBPATH:=${THEPKG_PREFIX:+$THEPKG_PREFIX/..}/var/db/thepkg}"
 
 set -e
 
-[ -d "${THEPKG_PREFIX:?}" ] || mkdir -pv "$THEPKG_PREFIX"
+[ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "${THEPKG_PREFIX:-/}"
 [ -d "${THEPKG_DBPATH:?}" ] || mkdir -pv "$THEPKG_DBPATH"
 
 log() { printf %s\\n " -> $1"; }
@@ -47,7 +47,7 @@ add)
 	log "Extracting the pkg '$thepkgname'..."
 	mkdir -v "$THEPKG_DBPATH/$thepkgname"
 	# tar -k    don’t replace existing files, treat them as errors
-	tar -axvf "${tar_file-"-"}" -k -C "$THEPKG_PREFIX" | tee /dev/stderr | \
+	tar -axvf "${tar_file-"-"}" -k -C "${THEPKG_PREFIX:-/}" | tee /dev/stderr | \
 	sort -r > "$THEPKG_DBPATH/$thepkgname"/manifest
 
 	# test -s   exists and has a size greater than zero
@@ -71,7 +71,7 @@ del)
 	}
 	log "Removing the pkg '$thepkgname'..."
 	(
-		cd "$THEPKG_PREFIX" || exit
+		cd "${THEPKG_PREFIX:-/}" || exit
 		while IFS= read -r file; do
 			case $file in
 				*/) rmdir -v "$file" 2>/dev/null||:;;
