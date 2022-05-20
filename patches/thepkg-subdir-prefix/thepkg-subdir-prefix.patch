@@ -1,0 +1,6 @@
+--- thepkg
++++ thepkg-subdir-prefix
+@@ -0,0 +0,0 @@
+-# [patch: thepkg-subdir-prefix] env parsing
++case $THEPKG_SUBDIR_PREFIX in /*) err "env var \$THEPKG_SUBDIR_PREFIX is not allowed to be in /*"; esac
++# todo: consider: escaping THEPKG_SUBDIR_PREFIX var for the sed commad

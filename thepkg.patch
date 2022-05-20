@@ -1,5 +1,5 @@
-@--- thepkg	2022-05-01 23:03:37.084394256 +0300
-@+++ thepkg-mixed	2022-05-01 23:05:11.214452978 +0300
+@--- thepkg
+@+++ thepkg-mixed
 @@ -1,125 +1,131 @@
  #!/bin/sh
  
@@ -12,12 +12,13 @@
  set -e
  
  # thepkg reqired dir / files:
- [ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "$THEPKG_PREFIX"
+ [ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "${THEPKG_PREFIX:-/}"
  [ -d "${THEPKG_DBPATH?}" ] || mkdir -pv "$THEPKG_DBPATH"
  
  # thepkg log fns:
  log() { printf %s\\n " -> $1"; }
- err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; }
+-err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
++err() { printf %s\\n >&2 " x> $1"; [ ${2-2} -eq 0 ] || exit ${2-2}; }
  
  # env parsing:
 -# [patch: thepkg-subdir-prefix] env parsing
@@ -31,27 +32,27 @@
  			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
  			"" \
  			"patches applyed:" \
-+			"  (not tested):" \
++			"  (not tested)" \
 +			"  [thepkg-addfromtar]" \
 +			"    install from tar and use (tar -a) autodetect if its for example '.tar.gz'." \
 +			"    thepkgname may be: </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
 +			"" \
-+			"  (not done):" \
++			"  (not done)" \
 +			"  [thepkg-thepkgver-arg-parsing]" \
 +			"    thepkgname may be <thepkgname@v1.0.0>" \
 +			"" \
-+			"  (not done):" \
++			"  (not done)" \
 +			"  [thepkg-subdir-prefix]" \
 +			"    use env var \$THEPKG_SUBDIR_PREFIX as \$THEPKG_PREFIX sub dir," \
 +			"    but stil write it to \$THEPKG_DBPATH/manifest file" \
 +			"" \
-+			"  (internal):" \
++			"  (internal)" \
 +			"  (not done at all)" \
 +			"  [thepkg-args-parsing-loop]" \
 +			"    prepare code for args parsing patches" \
 +			"" \
 +			"  (requires: thepkg-args-parsing-loop)" \
-+			"  (not done at all):" \
++			"  (not done at all)" \
 +			"  [thepkg-metadata]" \
 +			"    when thepkgname is in (*.thepkg.*|*.thepkg) or --metadata used. then metadata is read from the start of the file" \
 +			"" \
@@ -68,6 +69,16 @@
 +			"  (not done at all)" \
 +			"  [thepkg-upgrade]" \
 +			"    upgrade package" \
++			"" \
++			"  (done)" \
++			"  (internal)" \
++			"  [thepkg-noerr-stat0]" \
++			"    err fn to not exit when \$2=0" \
++			"" \
++			"  (done)" \
++			"  (requires: thepkg-noerr-stat0)" \
++			"  [thepkg-extended-verbose]" \
++			"    (1 for now!) print longer messages" \
  		; # [patches] help message patches -> patches applyed
  		exit
  	;;
@@ -122,8 +133,8 @@
  		{
  			# tar -k    don't replace existing files, treat them as errors
  			# manifest writing -> pre tar extractind
--			tar -xvf - -k -C "$THEPKG_PREFIX" # [patch: thepkg-addfromtar]
-+			tar -axvf "${tar_file-"-"}" -k -C "$THEPKG_PREFIX"
+-			tar -xvf - -k -C "${THEPKG_PREFIX:-/}" # [patch: thepkg-addfromtar]
++			tar -axvf "${tar_file-"-"}" -k -C "${THEPKG_PREFIX:-/}"
  			# manifest writing -> post tar extractind
  		} | {
  			tee /dev/stderr
@@ -132,13 +143,13 @@
  			sort -r
  			# manifest writing -> post sort
  		}
+ 	} > "$THEPKG_DBPATH/$thepkgname"/manifest
 -		# [patch: thepkg-metadata-thepkg-ext] manifest writing
 +		# TODO: # [patch: thepkg-metadata-thepkg-ext] manifest writing
 -		# [patch: thepkg-thepkgver-arg-parsing] manifest writing
 +		case ${thepkgver:+x} in
 +			x) printf "$thepkgver" > "$THEPKG_DBPATH/$thepkgname"/manifest
 +		esac
- 	} > "$THEPKG_DBPATH/$thepkgname"/manifest
  
  	# thepkg post install:
 -	# [patch: thepkg-addfromtar] thepkg post install
@@ -146,17 +157,18 @@
  
  	# test -s   exists and has a size greater than zero
  	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
- 		# detect when went wrong
- 		# reason: `tar` is ran in pipe
- 		# and exit status is lost in POSIX sh
- 		# then exit status would be 0
- 
- 		printf ' x> %s\n' >&2 \
- 			"Extracding the pkg went wrong." \
- 			"To remove the empty pkg installed," \
- 			"  please run: ${0##*/} del '$thepkgname'" \
- 		;
- 		exit 3
+-		err "empty or missing manifest file." # [patch: thepkg-extended-verbose]
++		# detect when went wrong
++		# reason: `tar` is ran in pipe
++		# and exit status is lost in POSIX sh
++		# then exit status would be 0
++
++		printf ' x> %s\n' >&2 \
++			"Extracding the pkg went wrong." \
++			"To remove the empty pkg installed," \
++			"  please run: ${0##*/} del '$thepkgname'" \
++		;
++		exit 3
  	}
  	;;
  del)
@@ -165,7 +177,7 @@
  	}
  	log "Removing the pkg '$thepkgname'..."
  	(
- 		cd "$THEPKG_PREFIX" || exit
+ 		cd "${THEPKG_PREFIX:-/}" || exit
  		while IFS= read -r file; do
  			case $file in
 -				# [patch: thepkg-keep-etc] del action -> case
