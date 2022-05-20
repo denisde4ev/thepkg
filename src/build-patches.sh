@@ -1,7 +1,11 @@
 #!/bin/sh
+
+# just extract pathes from thepkg.patch
+# to separate file patches in ./patches/**/*.patch
+
 set -u
 
-cd "${0%/*}" || exit
+cd "${0%/*}/.." || exit
 
 [ -d ./patches ] || mkdir -v ./patches
 
@@ -9,14 +13,14 @@ cd "${0%/*}" || exit
 unset patch_name
 unset hunk_header
 
-rediff-replace() {
-	# mv -vi ""
-	# TODO:!
-	echo TODOO >&2
-	exit 126
-}
+##rediff-replace() {
+##	# mv -vi ""
+##	# TODO:!
+##	echo TODOO >&2
+##	exit 126
+##}
 
-thepkg.patch
+#thepkg.patch
 while :; do # label reading_patchfile
 	IFS= read -r line || break # || break reading_patchfile
 
@@ -76,4 +80,4 @@ while :; do # label reading_patchfile
 
 	done # end label parsing_patch_line
 
-done <thepkg.patch # end label reading_patchfile
+done < ./src/thepkg.patch # end label reading_patchfile
