@@ -1,0 +1,5 @@
+--- thepkg
++++ thepkg-metadata-thepkg-ext
+@@ -0,0 +0,0 @@
+-	# [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
++	# TODO: # [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal

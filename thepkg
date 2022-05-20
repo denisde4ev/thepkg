@@ -1,68 +1,91 @@
 #!/bin/sh
 
-# : "${THEPKG_PREFIX=/data/data/com.termux/files/home/0/thepkg/test}"
+# thepkg config / env vars:
 : "${THEPKG_PREFIX:=""}"
-: "${THEPKG_DBPATH:=${THEPKG_PREFIX:+$THEPKG_PREFIX/..}/var/db/thepkg}"
+: "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
+# [patch: thepkg-subdir-prefix] thepkg config / env vars
 
 set -e
 
+# thepkg reqired dir / files:
 [ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "${THEPKG_PREFIX:-/}"
-[ -d "${THEPKG_DBPATH:?}" ] || mkdir -pv "$THEPKG_DBPATH"
+[ -d "${THEPKG_DBPATH?}" ] || mkdir -pv "$THEPKG_DBPATH"
 
+# thepkg log fns:
 log() { printf %s\\n " -> $1"; }
-err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; }
+err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
 
+# env parsing:
+# [patch: thepkg-subdir-prefix] env parsing
 
 # args parsing:
 case $1 in
-	-h|--help) printf %s\\n "Usage: ${0##*/} <add|del> </path/to/thepkgname@v1.0.0.tar.qz | thepkgname@v1.0.0.tar | thepkgname>"; exit;;
-	'') err "specify action add/del";;
+	-h|--help)
+		printf %s\\n \
+			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
+			"" \
+			"patches applyed:" \
+		; # [patches] help message patches -> patches applyed
+		exit
+	;;
+	'') err "please specify action add/del or see --help";;
 esac
+
+# thepkg args parsing loop:
+# [patch: thepkg-args-parsing-loop] thepkg args parsing loop
+
 case $1 in
 	add|del) action=$1;;
-	*)err "use --help";;
+	-*) err "unknown option '$1'. see --help";;
+	*)  err "unknown action '$1'. see --help";;
 esac
 shift
-thepkgname=${1##*/};
-unset tar_file
+
+# thepkg file detection:
+# [patch: thepkg-addfromtar] thepkg file detection
 case $1 in
-'')
-	err "missing or empty thepkgname";;
-*/*|*.tar|*.tar.*)
-	# note: for `thepkg del thepkgname.tar`
-	# will not look at the tar file at all,
-	# just detects the name from the name and removes it
-	tar_file=$1
-	thepkgname=${thepkgname%%".tar"*}
-	thepkgname=${thepkgname%%"@"*}
-;;
+	'') err "please specify thepkgname or see --help";;
+# [patch: thepkg-addfromtar] thepkg file detection -> case
 esac
 
 
+# thepkg post file detection:
+# [path: thepkg-thepkgver-arg-parsing] thepkg post file detection
+
+# thepkg action detection:
 case $action in
 add)
 	[ ! -e "$THEPKG_DBPATH/$thepkgname" ] || {
-		err "The pkg '$thepkgname' is already installed" 2
+		err "The pkg '$thepkgname' is already installed" 3
+		# [patch: thepkg-upgrade] add action -> already installed
 	}
 	log "Extracting the pkg '$thepkgname'..."
 	mkdir -v "$THEPKG_DBPATH/$thepkgname"
-	# tar -k    don’t replace existing files, treat them as errors
-	tar -axvf "${tar_file-"-"}" -k -C "${THEPKG_PREFIX:-/}" | tee /dev/stderr | \
-	sort -r > "$THEPKG_DBPATH/$thepkgname"/manifest
+
+	# manifest writing:
+	{
+		{
+			# tar -k    don't replace existing files, treat them as errors
+			# manifest writing -> pre tar extractind
+			tar -xvf - -k -C "${THEPKG_PREFIX:-/}" # [patch: thepkg-addfromtar]
+			# manifest writing -> post tar extractind
+		} | {
+			tee /dev/stderr
+		} | {
+			# manifest writing -> pre sort
+			sort -r
+			# manifest writing -> post sort
+		}
+	} > "$THEPKG_DBPATH/$thepkgname"/manifest
+		# [patch: thepkg-metadata-thepkg-ext] manifest writing
+		# [patch: thepkg-thepkgver-arg-parsing] manifest writing
+
+	# thepkg post install:
+	# [patch: thepkg-addfromtar] thepkg post install
 
 	# test -s   exists and has a size greater than zero
 	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
-		# detect when went wrong
-		# reason: `tar` is ran in pipe
-		# and exit status is lost in POSIX sh
-		# then exit status would be 0
-
-		printf ' x> %s\n' >&2 \
-			"Extracding the pkg went wrong." \
-			"To remove the empty pkg installed," \
-			"  please run: ${0##*/} del '$thepkgname'" \
-		;
-		exit 3
+		err "empty or missing manifest file." # [patch: thepkg-extended-verbose]
 	}
 	;;
 del)
@@ -74,12 +97,21 @@ del)
 		cd "${THEPKG_PREFIX:-/}" || exit
 		while IFS= read -r file; do
 			case $file in
-				*/) rmdir -v "$file" 2>/dev/null||:;;
-				*) rm -v "$file";;
+				# [patch: thepkg-keep-etc] del action -> case
+				*/)
+					rmdir -v "$file" 2>/dev/null || :
+				;;
+				*)
+					rm -v "$file"
+				;;
 			esac
 		done
 	) < "$THEPKG_DBPATH/$thepkgname"/manifest
+	
 	rm -v "$THEPKG_DBPATH/$thepkgname"/manifest
+	# thepkg post manifest removal:
+	# [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
+
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
 *) err "use --help";;
