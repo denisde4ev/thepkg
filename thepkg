@@ -95,7 +95,7 @@ del)
 	log "Removing the pkg '$thepkgname'..."
 	(
 		cd "${THEPKG_PREFIX:-/}" || exit
-		while IFS= read -r file; do
+		while IFS= read -r file || case $file in '') false; esac; do
 			case $file in
 				# [patch: thepkg-keep-etc] del action -> case
 				*/)
