@@ -3,6 +3,7 @@ var
 test
 out
 
+_thepkg*
 
 **/src/
 **/pkg/
