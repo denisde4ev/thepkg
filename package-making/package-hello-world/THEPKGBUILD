@@ -1,0 +1,26 @@
+#!/bin/sh
+
+thepkgname=hello-wold
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="hello-wold"
+
+arch="any"
+depends="sh coreutils tar"
+
+source="$thepkgname"
+checksum="SKIP"
+
+
+package() {
+	cd "$srcdir"
+
+	install -Dm755 "$thepkgname" "$pkgdir"/bin/"$thepkgname"
+}
+
+
+
+
+case $0 in THEPKGBUILD|*/THEPKGBUILD)
+	. "${0%/*}"/makethepkg
+esac
