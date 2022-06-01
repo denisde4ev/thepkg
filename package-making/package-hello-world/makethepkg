@@ -1,6 +1,14 @@
 #!/bin/sh
 set -eu
 
+if [ -d /.\\Windows ]; then
+	# busybox-win32
+	ln () {
+		for i; do set -- "$@" "${i////\\}"; done; shift $(( $# / 2 ))
+		sudo busybox ln "$@";
+	}
+fi
+
 # unset opt_i
 opt_i=''
 
@@ -56,8 +64,11 @@ if ! [ -s "$srcdir/${source%%" "*}" ]; then
 	_makethepkg_log "downloading/(copying) sources..."
 	(
 	set -feu
+	# IFS # keep the def. IFS=$' \t\n'
 	for i in $source; do
-		ln -s "$PWD/$i" "$srcdir/"
+		if [ ! -e "$srcdir/$i" ]; then
+			ln -sr "$PWD/$i" "$srcdir/"
+		fi
 	done
 	unset i
 	)
