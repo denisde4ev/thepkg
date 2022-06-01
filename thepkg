@@ -123,5 +123,5 @@ del)
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
-*) err "use --help";;
+*) err "see --help";;
 esac

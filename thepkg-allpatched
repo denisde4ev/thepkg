@@ -166,8 +166,10 @@ del)
 	}
 	manifest_path=$THEPKG_DBPATH/$thepkgname/manifest
 	# thepkg pre del
+	unset _patch_thepkg_rmfailed__exit_on_fail
 	if [ -e "$manifest_path.rmfailed" ];
 		manifest_path=$manifest_path.rmfailed
+		_patch_thepkg_rmfailed__exit_on_fail=''
 		###err "The pkg '$thepkgname' haven not been removed last time" 2 # todo: is this good error message
 	fi
 	
@@ -183,7 +185,10 @@ del)
 				*)
 					rm -v "$file" || {
 						# thepkg del rm failed
-						printf %s\\n "$file" >> "$THEPKG_DBPATH/$thepkgname"/manifest.rmfailed || \
+						case ${_patch_thepkg_rmfailed__exit_on_fail+x} in
+							x) false;;
+							*) printf %s\\n "$file" >> "$THEPKG_DBPATH/$thepkgname"/manifest.rmfailed;;
+						esac || \
 						false
 					}
 				;;
@@ -197,5 +202,5 @@ del)
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
-*) err "use --help";;
+*) err "see --help";;
 esac
