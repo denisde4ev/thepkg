@@ -16,6 +16,7 @@ set -e
 [ -d "${THEPKG_DBPATH?}" ] || mkdir -pv "$THEPKG_DBPATH"
 # [patch: thepkg-subdir-prefix] thepkg reqired dir / files:
 
+
 # thepkg log fns:
 log() { printf %s\\n " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
@@ -69,6 +70,7 @@ add)
 	{
 		{
 			# tar -k    don't replace existing files, treat them as errors
+
 			# tar opts:
 			tar_opts=k
 			# [patch: thepkg-addfromtar]
@@ -76,9 +78,12 @@ add)
 			tar_file=- # [patch: thepkg-addfromtar]
 
 			tar_directory=${THEPKG_PREFIX:-/} # [patch: thepkg-subdir-prefix] tar opts
+
 			# manifest writing -> pre tar extractind
 			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory" # [patch: thepkg-addfromtar]
-			# manifest writing -> post tar extractind
+
+		# manifest writing -> post tar extractind
+		# [patch: thepkg-subdir-prefix] manifest writing -> post tar extractind
 		} | {
 			tee /dev/stderr
 		} | {
@@ -87,8 +92,9 @@ add)
 			# manifest writing -> post sort
 		}
 	} > "$THEPKG_DBPATH/$thepkgname"/manifest
-		# [patch: thepkg-metadata-thepkg-ext] manifest writing
-		# [patch: thepkg-thepkgver-arg-parsing] manifest writing
+	# post manifest, metadata writing:
+	# [patch: thepkg-metadata-thepkg-ext] post manifest, metadata writing
+	# [patch: thepkg-thepkgver-arg-parsing] post manifest, metadata writing
 
 	# thepkg post install:
 	# [patch: thepkg-addfromtar] thepkg post install
@@ -117,10 +123,11 @@ del)
 			esac
 		done
 	) < "$THEPKG_DBPATH/$thepkgname"/manifest
-	
+
 	rm -v "$THEPKG_DBPATH/$thepkgname"/manifest
 	# thepkg post manifest removal:
 	# [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
+	# [patch: thepkg-thepkgver-arg-parsing] thepkg post manifest removal
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;

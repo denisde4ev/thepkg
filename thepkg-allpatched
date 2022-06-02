@@ -19,6 +19,7 @@ case ${THEPKG_SUBDIR_PREFIX:+x} in x)
 	mkdir -pv "${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX"
 esac
 
+
 # thepkg log fns:
 log() { printf %s\\n " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; [ ${2-2} -eq 0 ] || exit ${2-2}; }
@@ -127,6 +128,7 @@ add)
 	{
 		{
 			# tar -k    don't replace existing files, treat them as errors
+
 			# tar opts:
 			tar_opts=k
 			tar_opts=${tar_opts}a
@@ -134,9 +136,14 @@ add)
 			tar_file=${tar_file:-"-"}
 
 			tar_directory=${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX
+
 			# manifest writing -> pre tar extractind
 			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory"
-			# manifest writing -> post tar extractind
+
+		# manifest writing -> post tar extractind
+		} | {
+			while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
+			case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac
 		} | {
 			tee /dev/stderr
 		} | {
@@ -145,10 +152,11 @@ add)
 			# manifest writing -> post sort
 		}
 	} > "$THEPKG_DBPATH/$thepkgname"/manifest
-		# TODO: # [patch: thepkg-metadata-thepkg-ext] manifest writing
-		case ${thepkgver:+x} in
-			x) printf "$thepkgver" > "$THEPKG_DBPATH/$thepkgname"/manifest
-		esac
+	# post manifest, metadata writing:
+	# TODO: # [patch: thepkg-metadata-thepkg-ext] post manifest, metadata writing
+	case ${thepkgver:+x} in
+		x) printf "$thepkgver" > "$THEPKG_DBPATH/$thepkgname"/version
+	esac
 
 	# thepkg post install:
 	# TODO: # [patch: thepkg-addfromtar] thepkg post install
@@ -187,10 +195,11 @@ del)
 			esac
 		done
 	) < "$THEPKG_DBPATH/$thepkgname"/manifest
-	
+
 	rm -v "$THEPKG_DBPATH/$thepkgname"/manifest
 	# thepkg post manifest removal:
 	# TODO: # [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
+	[ -e "$THEPKG_DBPATH/$thepkgname"/version ] && rm -v "$THEPKG_DBPATH/$thepkgname"/version
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
