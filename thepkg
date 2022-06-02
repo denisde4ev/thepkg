@@ -47,6 +47,7 @@ shift
 
 # thepkg file detection:
 # [patch: thepkg-addfromtar] thepkg file detection
+thepkgname=${1##*/}
 case $1 in
 	'') err "please specify thepkgname or see --help";;
 # [patch: thepkg-addfromtar] thepkg file detection -> case
@@ -108,6 +109,10 @@ del)
 	[ -e "$THEPKG_DBPATH/$thepkgname" ] || {
 		err "The pkg '$thepkgname' is not installed" 2
 	}
+	manifest_path=$THEPKG_DBPATH/$thepkgname/manifest
+	# thepkg pre del
+	# [patch: thepkg-rmfailed] pre del
+	
 	log "Removing the pkg '$thepkgname'..."
 	(
 		cd "${THEPKG_PREFIX:-/}" || exit
@@ -118,18 +123,22 @@ del)
 					rmdir -v "$file" 2>/dev/null || :
 				;;
 				*)
-					rm -v "$file"
+					rm -v "$file" || {
+						# thepkg del rm failed
+						# [patch: thepkg-rmfailed] thepkg del rm failed
+						false
+					}
 				;;
 			esac
 		done
-	) < "$THEPKG_DBPATH/$thepkgname"/manifest
-
-	rm -v "$THEPKG_DBPATH/$thepkgname"/manifest
+	) < "$manifest_path"
+	
+	rm -v "$manifest_path"
 	# thepkg post manifest removal:
 	# [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
 	# [patch: thepkg-thepkgver-arg-parsing] thepkg post manifest removal
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
-*) err "use --help";;
+*) err "see --help";;
 esac
