@@ -5,19 +5,24 @@
 : "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
 : "${THEPKG_SUBDIR_PREFIX:=""}"
 
+
 set -e
+
+# env parsing:
+case $THEPKG_SUBDIR_PREFIX in /*) err "env var \$THEPKG_SUBDIR_PREFIX is not allowed to be in /*"; esac
 
 # thepkg reqired dir / files:
 [ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "${THEPKG_PREFIX:-/}"
 [ -d "${THEPKG_DBPATH?}" ] || mkdir -pv "$THEPKG_DBPATH"
+case ${THEPKG_SUBDIR_PREFIX:+x} in x)
+	[ -d "$THEPKG_PREFIX/$THEPKG_SUBDIR_PREFIX" ] || \
+	mkdir -pv "${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX"
+esac
 
 # thepkg log fns:
 log() { printf %s\\n " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; [ ${2-2} -eq 0 ] || exit ${2-2}; }
 
-# env parsing:
-case $THEPKG_SUBDIR_PREFIX in /*) err "env var \$THEPKG_SUBDIR_PREFIX is not allowed to be in /*"; esac
-# todo: consider: escaping THEPKG_SUBDIR_PREFIX var for the sed commad
 
 # args parsing:
 case $1 in
@@ -25,7 +30,7 @@ case $1 in
 		printf %s\\n \
 			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
 			"" \
-			"patches applyed:" \
+			"[patches applyed: {TODO: for now not separated per package path for help info}" \
 			"  (not tested)" \
 			"  [thepkg-addfromtar]" \
 			"    install from tar and use (tar -a) autodetect if its for example '.tar.gz'." \
@@ -122,8 +127,15 @@ add)
 	{
 		{
 			# tar -k    don't replace existing files, treat them as errors
+			# tar opts:
+			tar_opts=k
+			tar_opts=${tar_opts}a
+
+			tar_file=${tar_file:-"-"}
+
+			tar_directory=${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX
 			# manifest writing -> pre tar extractind
-			tar -axvf "${tar_file-"-"}" -k -C "${THEPKG_PREFIX:-/}"
+			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory"
 			# manifest writing -> post tar extractind
 		} | {
 			tee /dev/stderr

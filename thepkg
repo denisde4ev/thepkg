@@ -5,18 +5,21 @@
 : "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
 # [patch: thepkg-subdir-prefix] thepkg config / env vars
 
+
 set -e
+
+# env parsing:
+# [patch: thepkg-subdir-prefix] env parsing
 
 # thepkg reqired dir / files:
 [ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "${THEPKG_PREFIX:-/}"
 [ -d "${THEPKG_DBPATH?}" ] || mkdir -pv "$THEPKG_DBPATH"
+# [patch: thepkg-subdir-prefix] thepkg reqired dir / files:
 
 # thepkg log fns:
 log() { printf %s\\n " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
 
-# env parsing:
-# [patch: thepkg-subdir-prefix] env parsing
 
 # args parsing:
 case $1 in
@@ -24,7 +27,7 @@ case $1 in
 		printf %s\\n \
 			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
 			"" \
-			"patches applyed:" \
+			"[patches applyed: {TODO: for now not separated per package path for help info}" \
 		; # [patches] help message patches -> patches applyed
 		exit
 	;;
@@ -66,8 +69,15 @@ add)
 	{
 		{
 			# tar -k    don't replace existing files, treat them as errors
+			# tar opts:
+			tar_opts=k
+			# [patch: thepkg-addfromtar]
+
+			tar_file=- # [patch: thepkg-addfromtar]
+
+			tar_directory=${THEPKG_PREFIX:-/} # [patch: thepkg-subdir-prefix] tar opts
 			# manifest writing -> pre tar extractind
-			tar -xvf - -k -C "${THEPKG_PREFIX:-/}" # [patch: thepkg-addfromtar]
+			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory" # [patch: thepkg-addfromtar]
 			# manifest writing -> post tar extractind
 		} | {
 			tee /dev/stderr
