@@ -1,15 +1,13 @@
 --- thepkg-allpatched	2022-05-22 16:19:50.292371811 +0300
 +++ thepkg-allpatched~	2022-05-22 15:42:45.532735211 +0300
-@@ -1,186 +1,195 @@
+@@ -1,186 +1,193 @@
  #!/bin/sh
  
  # thepkg config / env vars:
  : "${THEPKG_PREFIX:=""}"
-+: "${THEPKG_PREFIX:="$HOME/thepkg/test"}"
  : "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
  : "${THEPKG_SUBDIR_PREFIX:=""}"
  
-+
  set -e
  
 +# env parsing:
