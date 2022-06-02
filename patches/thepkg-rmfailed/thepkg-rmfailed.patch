@@ -1,0 +1,8 @@
+--- thepkg
++++ thepkg-rmfailed
+@@ -0,0 +0,0 @@
+-						# [patch: thepkg-rmfailed] thepkg del rm failed
++						case ${_patch_thepkg_rmfailed__exit_on_fail+x} in
++							x) false;;
++							*) printf %s\\n "$file" >> "$THEPKG_DBPATH/$thepkgname"/manifest.rmfailed;;
++						esac || \
