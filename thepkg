@@ -39,18 +39,22 @@ esac
 # [patch: thepkg-args-parsing-loop] thepkg args parsing loop
 
 case $1 in
-	add|del) action=$1;;
+	add|del) action=$1; shift;;
 	-*) err "unknown option '$1'. see --help";;
 	*)  err "unknown action '$1'. see --help";;
 esac
-shift
 
 # thepkg file detection:
+
 # [patch: thepkg-addfromtar] thepkg file detection
-thepkgname=${1##*/}
 case $1 in
-	'') err "please specify thepkgname or see --help";;
+'')
+	err "please specify thepkgname or see --help"
+	;;
 # [patch: thepkg-addfromtar] thepkg file detection -> case
+[!-]*)
+	thepkgname=${1##*/}
+	;;
 esac
 
 

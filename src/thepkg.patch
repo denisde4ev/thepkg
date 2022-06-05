@@ -101,26 +101,30 @@
  # [patch: thepkg-args-parsing-loop] thepkg args parsing loop
  
  case $1 in
- 	add|del) action=$1;;
+ 	add|del) action=$1; shift;;
  	-*) err "unknown option '$1'. see --help";;
  	*)  err "unknown action '$1'. see --help";;
  esac
- shift
  
  # thepkg file detection:
+ 
 -# [patch: thepkg-addfromtar] thepkg file detection
--thepkgname=${1##*/}
 +unset tar_file
  case $1 in
- 	'') err "please specify thepkgname or see --help";;
+ '')
+ 	err "please specify thepkgname or see --help"
+ 	;;
 -# [patch: thepkg-addfromtar] thepkg file detection -> case
-+	*/*|/*.tar|./*.tar|/*.tar.*|./*.tar.*)
-+		# note: for `thepkg del thepkgname.tar`
-+		# will not look at the tar file at all,
-+		# just detects the name from the name
-+		tar_file=$1
-+		thepkgname=${thepkgname%%".tar"*}
++*/*|/*.tar|./*.tar|/*.tar.*|./*.tar.*)
++	# note: for `thepkg del thepkgname.tar`
++	# will not look at the tar file at all,
++	# just detects the name from the name
++	tar_file=$1
++	thepkgname=${1%%".tar"*}
 +	;;
+ [!-]*)
+ 	thepkgname=${1##*/}
+ 	;;
  esac
  
  
@@ -210,7 +214,7 @@
  	# thepkg pre del
 -	# [patch: thepkg-rmfailed] pre del
 +	unset _patch_thepkg_rmfailed__exit_on_fail
-+	if [ -e "$manifest_path.rmfailed" ];
++	if [ -e "$manifest_path.rmfailed" ]; then
 +		manifest_path=$manifest_path.rmfailed
 +		_patch_thepkg_rmfailed__exit_on_fail=''
 +		###err "The pkg '$thepkgname' haven not been removed last time" 2 # todo: is this good error message
