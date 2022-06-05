@@ -2,4 +2,8 @@
 
 cd "${0%/*}" || exit
 
-tar -cvf ./hello-wold.tar --transform="s|hello-wold|bin/hello-wold|" --owner=root --group=root --mode=755 hello-wold
+tar -cvf ./hello-wold.tar \
+	--transform="s|hello-wold|bin/hello-wold|" \
+	--owner=root --group=root --mode=755 \
+	hello-wold \
+;
