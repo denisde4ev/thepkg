@@ -152,8 +152,15 @@ add)
 
 		# manifest writing -> post tar extractind
 		} | {
-			while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
-			case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac
+			case $THEPKG_SUBDIR_PREFIX in
+			*)
+				cat
+				;;
+			'')
+				while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
+				case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac
+				;;
+			esac
 		} | {
 			tee /dev/stderr
 		} | {
