@@ -2,6 +2,7 @@
 @+++ thepkg-mixed
 @@ -1,125 +1,131 @@
  #!/bin/sh
+ case $1 in -x) set -x; shift; esac # debug opt
  
  # thepkg config / env vars:
  : "${THEPKG_PREFIX:=""}"
