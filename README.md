@@ -1,11 +1,13 @@
 # THEPKG
-simple verry patchable package manager powered by tar
+simple patchable package manager powered by tar
 
 ## Example usage:
 ``` shell
-$ thepkg add hello-world < ./package-making/package-hello-world/hello-wold.tar
+$ cd ./package-making/package-hello-world
+$ ./package-hello-wold.sh
+$ thepkg add hello-world < ./hello-wold.tar
  -> Extracting the pkg 'hello-world'...
-created directory: '/tmp/thepkg-prefix/var/db/thepkg/hello-world'
+created directory: '/var/db/thepkg/hello-world'
 bin/hello-wold
 $ hello-world
 Hello, World!
