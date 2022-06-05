@@ -2,6 +2,7 @@
 
 cd "${0%/*}" || exit
 
+# todo: add the dir 'bin/' as in tar owner
 tar -cvf ./hello-wold.tar \
 	--transform="s|hello-wold|bin/hello-wold|" \
 	--owner=root --group=root --mode=755 \
