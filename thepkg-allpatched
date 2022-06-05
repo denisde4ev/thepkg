@@ -26,13 +26,14 @@ log() { printf %s\\n " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; [ ${2-2} -eq 0 ] || exit ${2-2}; }
 
 
+####			"patches applyed: {TODO: for now not separated per package path for help info}" \
 # args parsing:
 case $1 in
 	-h|--help)
 		printf %s\\n \
 			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
 			"" \
-			"[patches applyed: {TODO: for now not separated per package path for help info}" \
+			"patches applyed:" \
 			"  (not tested)" \
 			"  [thepkg-addfromtar]" \
 			"    install from tar and use (tar -a) autodetect if its for example '.tar.gz'." \
@@ -213,7 +214,7 @@ del)
 			case $file in
 				# TODO: # [patch: thepkg-keep-etc] del action -> case
 				*/)
-					rmdir -v "$file" 2>/dev/null || :
+					rmdir "$file" 2>/dev/null || :
 				;;
 				*)
 					rm -v "$file" || {
