@@ -11,7 +11,7 @@ created directory: '/var/db/thepkg/hello-world'
 bin/hello-wold
 $ hello-world
 Hello, World!
-$ thepkg add hello-world
+$ thepkg del hello-world
  -> Removing the pkg 'hello-world'...
 removed 'bin/hello-wold'
 removed '/var/db/thepkg/hello-world/manifest'
