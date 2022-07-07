@@ -24,7 +24,8 @@ rmdir: removing directory, '/var/db/thepkg/hello-world'
 $ thepkg --help
 Usage: thepkg <add|del> <thepkgname>
 reads tar format package from stdin
-$ 
+```
+```
 $ ./thepkg-allpatched --help # (for now with many todo, I'm still working on it)
 Usage: thepkg-allpatched <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>
 reads tar format package from stdin
