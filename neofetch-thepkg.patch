@@ -1,0 +1,6 @@
+--- neofetch 7.1.0-2	2022-07-09 11:47:39.764082906 +0300
++++ neofetch-thepkg 7.1.0-2	2022-07-09 11:47:47.207431855 +0300
+@@ -1515,2 +1515,3 @@
+             has emerge  && dir ${br_prefix}/var/db/pkg/*/*/
++            has thepkg  && dir ${br_prefix}${THEPKG_DBPATH-/var/db/thepkg}/*/
+             has Compile && dir ${br_prefix}/Programs/*/
