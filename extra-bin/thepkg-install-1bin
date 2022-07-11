@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+: "${THEPKG_PREFIX:=""}"
+: "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
+: "${THEPKG_SUBDIR_PREFIX:="/usr/bin"}"
+
+thepkgname=${1?'usage: <bin>'}
+
+cp -vi ./"$thepkgname" "$THEPKG_PREFIX/$THEPKG_SUBDIR_PREFIX/"
+mkdir -pv "$THEPKG_DBPATH/$thepkgname"
+printf %s\\n "$THEPKG_SUBDIR_PREFIX/$thepkgname" >> "$THEPKG_DBPATH/$thepkgname"/manifest
+
+ls -al /var/db/thepkg/tput /usr/bin/tput
