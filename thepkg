@@ -1,4 +1,5 @@
 #!/bin/sh
+case $1 in -x) set -x; shift; esac # debug opt
 
 # thepkg config / env vars:
 : "${THEPKG_PREFIX:=""}"
@@ -22,13 +23,14 @@ log() { printf %s\\n " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
 
 
+####			"patches applyed: {TODO: for now not separated per package path for help info}" \
 # args parsing:
 case $1 in
 	-h|--help)
 		printf %s\\n \
 			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
 			"" \
-			"[patches applyed: {TODO: for now not separated per package path for help info}" \
+			"patches applyed:" \
 		; # [patches] help message patches -> patches applyed
 		exit
 	;;
@@ -39,18 +41,22 @@ esac
 # [patch: thepkg-args-parsing-loop] thepkg args parsing loop
 
 case $1 in
-	add|del) action=$1;;
+	add|del) action=$1; shift;;
 	-*) err "unknown option '$1'. see --help";;
 	*)  err "unknown action '$1'. see --help";;
 esac
-shift
 
 # thepkg file detection:
+
 # [patch: thepkg-addfromtar] thepkg file detection
-thepkgname=${1##*/}
 case $1 in
-	'') err "please specify thepkgname or see --help";;
+'')
+	err "please specify thepkgname or see --help"
+	;;
 # [patch: thepkg-addfromtar] thepkg file detection -> case
+[!-]*)
+	thepkgname=${1##*/}
+	;;
 esac
 
 
@@ -120,7 +126,7 @@ del)
 			case $file in
 				# [patch: thepkg-keep-etc] del action -> case
 				*/)
-					rmdir -v "$file" 2>/dev/null || :
+					rmdir "$file" 2>/dev/null || :
 				;;
 				*)
 					rm -v "$file" || {

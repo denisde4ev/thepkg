@@ -2,6 +2,7 @@
 @+++ thepkg-mixed
 @@ -1,125 +1,131 @@
  #!/bin/sh
+ case $1 in -x) set -x; shift; esac # debug opt
  
  # thepkg config / env vars:
  : "${THEPKG_PREFIX:=""}"
@@ -32,13 +33,14 @@
 +err() { printf %s\\n >&2 " x> $1"; [ ${2-2} -eq 0 ] || exit ${2-2}; }
  
  
+ ####			"patches applyed: {TODO: for now not separated per package path for help info}" \
  # args parsing:
  case $1 in
  	-h|--help)
  		printf %s\\n \
  			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
  			"" \
- 			"[patches applyed: {TODO: for now not separated per package path for help info}" \
+ 			"patches applyed:" \
 +			"  (not tested)" \
 +			"  [thepkg-addfromtar]" \
 +			"    install from tar and use (tar -a) autodetect if its for example '.tar.gz'." \
@@ -101,26 +103,30 @@
  # [patch: thepkg-args-parsing-loop] thepkg args parsing loop
  
  case $1 in
- 	add|del) action=$1;;
+ 	add|del) action=$1; shift;;
  	-*) err "unknown option '$1'. see --help";;
  	*)  err "unknown action '$1'. see --help";;
  esac
- shift
  
  # thepkg file detection:
+ 
 -# [patch: thepkg-addfromtar] thepkg file detection
--thepkgname=${1##*/}
 +unset tar_file
  case $1 in
- 	'') err "please specify thepkgname or see --help";;
+ '')
+ 	err "please specify thepkgname or see --help"
+ 	;;
 -# [patch: thepkg-addfromtar] thepkg file detection -> case
-+	*/*|/*.tar|./*.tar|/*.tar.*|./*.tar.*)
-+		# note: for `thepkg del thepkgname.tar`
-+		# will not look at the tar file at all,
-+		# just detects the name from the name
-+		tar_file=$1
-+		thepkgname=${thepkgname%%".tar"*}
++*/*|/*.tar|./*.tar|/*.tar.*|./*.tar.*)
++	# note: for `thepkg del thepkgname.tar`
++	# will not look at the tar file at all,
++	# just detects the name from the name
++	tar_file=$1
++	thepkgname=${1%%".tar"*}
 +	;;
+ [!-]*)
+ 	thepkgname=${1##*/}
+ 	;;
  esac
  
  
@@ -163,8 +169,15 @@
  		# manifest writing -> post tar extractind
 -		# [patch: thepkg-subdir-prefix] manifest writing -> post tar extractind
 +		} | {
-+			while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
-+			case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac
++			case $THEPKG_SUBDIR_PREFIX in
++			*)
++				cat
++				;;
++			'')
++				while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
++				case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac
++				;;
++			esac
  		} | {
  			tee /dev/stderr
  		} | {
@@ -210,7 +223,7 @@
  	# thepkg pre del
 -	# [patch: thepkg-rmfailed] pre del
 +	unset _patch_thepkg_rmfailed__exit_on_fail
-+	if [ -e "$manifest_path.rmfailed" ];
++	if [ -e "$manifest_path.rmfailed" ]; then
 +		manifest_path=$manifest_path.rmfailed
 +		_patch_thepkg_rmfailed__exit_on_fail=''
 +		###err "The pkg '$thepkgname' haven not been removed last time" 2 # todo: is this good error message
@@ -224,7 +237,7 @@
 -				# [patch: thepkg-keep-etc] del action -> case
 +				# TODO: # [patch: thepkg-keep-etc] del action -> case
  				*/)
- 					rmdir -v "$file" 2>/dev/null || :
+ 					rmdir "$file" 2>/dev/null || :
  				;;
  				*)
  					rm -v "$file" || {
