@@ -1,4 +1,22 @@
 #!/bin/sh
+
+
+# TODO: (when i start ofver because I forgot what mess this script is, you(me) knew this comming...)
+# lets make THEPKGBUILD the package build system
+# that can be executed dyrectly by user in interactive shell
+#
+# scrips must have `src=${src-$PWD/src}; pkg=${pkg-$PWD/pkg}`
+# or should not use $src and $pkg vars at all!
+# may uses insdea: mv -vi ./src ./pkg and (cd src && make && install executable ../pkg/)
+ 
+
+
+
+
+
+
+
+
 set -eu
 
 if [ -d /.\\Windows ]; then
