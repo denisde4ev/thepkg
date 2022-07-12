@@ -11,4 +11,4 @@ cp -vi ./"$thepkgname" "$THEPKG_PREFIX/$THEPKG_SUBDIR_PREFIX/"
 mkdir -pv "$THEPKG_DBPATH/$thepkgname"
 printf %s\\n "$THEPKG_SUBDIR_PREFIX/$thepkgname" >> "$THEPKG_DBPATH/$thepkgname"/manifest
 
-ls -al /var/db/thepkg/tput /usr/bin/tput
+ls -al "$THEPKG_DBPATH/$thepkgname" "$THEPKG_PREFIX/$THEPKG_SUBDIR_PREFIX/$thepkgname"
