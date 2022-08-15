@@ -1,5 +1,19 @@
 #!/bin/sh
 
+
+#####
+
+# TODO: this script is kind of broken:
+# 1. line hunk is not updated
+# 2. patches goes in incerect .patch files
+# 3. patches are ovewriten by the last patch.
+#    probably should rm all old .patch files before writing,
+#    and then should be with `>>` instead of `>`
+
+#####
+
+
+
 # just extract pathes from thepkg.patch
 # to separate file patches in ./patches/**/*.patch
 
@@ -75,7 +89,7 @@ while :; do # label reading_patchfile
 					*) break 2;; # break parsing_patch_line
 				esac
 			done
-		} >"$patch_file"
+		} > "$patch_file"
 		rediff thepkg.patch "$patch_file"
 
 	done # end label parsing_patch_line

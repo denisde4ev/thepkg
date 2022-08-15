@@ -13,12 +13,22 @@ cd "${0%/*}/.." || exit
 
 
 while IFS= read -r line; do
+	##case $line in *'err'*)
+	##	set -x
+	##	( printf %s\\n line="$line" | bat -A )
+	##;; esac
+	
 	case $line in
-		[\-\ ]*) printf %s\\n "${line#?}" >&3;;
+		[-\ ]*) printf %s\\n "${line#?}" >&3
+		#: to 3
+		;;
 	esac
 	case $line in
-		[\+\ ]*) printf %s\\n "${line#?}" >&4;;
+		[\+\ ]*) printf %s\\n "${line#?}" >&4
+		#: to 4
+		;;
 	esac
+	##case $line in *'err'*) set +x;; esac
 done <./src/thepkg.patch 3>./build/thepkg 4>./build/thepkg-allpatched
 
 

@@ -1,5 +1,31 @@
 #!/bin/sh
+
+
+# TODO: (when i start ofver because I forgot what mess this script is, you(me) knew this comming...)
+# lets make THEPKGBUILD the package build system
+# that can be executed dyrectly by user in interactive shell
+#
+# scrips must have `src=${src-$PWD/src}; pkg=${pkg-$PWD/pkg}`
+# or should not use $src and $pkg vars at all!
+# may uses insdea: mv -vi ./src ./pkg and (cd src && make && install executable ../pkg/)
+ 
+
+
+
+
+
+
+
+
 set -eu
+
+if [ -d /.\\Windows ]; then
+	# busybox-win32
+	ln () {
+		for i; do set -- "$@" "${i////\\}"; done; shift $(( $# / 2 ))
+		sudo busybox ln "$@";
+	}
+fi
 
 # unset opt_i
 opt_i=''
@@ -56,8 +82,11 @@ if ! [ -s "$srcdir/${source%%" "*}" ]; then
 	_makethepkg_log "downloading/(copying) sources..."
 	(
 	set -feu
+	# IFS # keep the def. IFS=$' \t\n'
 	for i in $source; do
-		ln -s "$PWD/$i" "$srcdir/"
+		if [ ! -e "$srcdir/$i" ]; then
+			ln -sr "$PWD/$i" "$srcdir/"
+		fi
 	done
 	unset i
 	)

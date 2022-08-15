@@ -1,6 +1,7 @@
 --- thepkg
 +++ thepkg-subdir-prefix
 @@ -0,0 +0,0 @@
--# [patch: thepkg-subdir-prefix] env parsing
-+case $THEPKG_SUBDIR_PREFIX in /*) err "env var \$THEPKG_SUBDIR_PREFIX is not allowed to be in /*"; esac
-+# todo: consider: escaping THEPKG_SUBDIR_PREFIX var for the sed commad
+-		# [patch: thepkg-subdir-prefix] manifest writing -> post tar extractind
++		} | {
++			while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
++			case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac

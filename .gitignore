@@ -5,8 +5,10 @@ out
 
 _thepkg*
 
-**/src/
-**/pkg/
+package-making/**/src/
+package-thepkg/**/src/
+package-making/**/pkg/
+package-thepkg/**/pkg/
 **/*.tar
 **/*.tar.*
 **/*.thepkg

@@ -1,0 +1,7 @@
+#!/hint/sh
+set -euf; IFS=''
+
+tar -cvf ./${THEPKGNAME}.pkg.tar \
+	--transform="s|^./\|^|usr/bin/|" --owner=root --group=root --mode=755 \
+	./THEPKG_EXECUTABLE_BIN \
+;

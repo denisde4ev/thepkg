@@ -3,3 +3,5 @@
 @@ -0,0 +0,0 @@
 -	# [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
 +	# TODO: # [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
+-	# [patch: thepkg-thepkgver-arg-parsing] thepkg post manifest removal
++	[ -e "$THEPKG_DBPATH/$thepkgname"/version ] && rm -v "$THEPKG_DBPATH/$thepkgname"/version

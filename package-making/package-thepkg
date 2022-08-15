@@ -1,5 +1,9 @@
 #!/bin/sh
 
-cd "${0%/*}" || exit
+cd "${0%/*}/.." || exit
 
-tar -cvf ./thepkg.tar --transform="s|thepkg|bin/thepkg|" --owner=root --group=root --mode=755 thepkg
+# todo: add the dir 'bin/' as in tar owner
+tar -cvf ./package-making/thepkg.tar \
+	--transform="s|thepkg|bin/thepkg|" --owner=root --group=root --mode=755 \
+	./thepkg \
+;

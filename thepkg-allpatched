@@ -1,24 +1,32 @@
 #!/bin/sh
+case $1 in -x) set -x; shift; esac # debug opt
 
 # thepkg config / env vars:
 : "${THEPKG_PREFIX:=""}"
 : "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
 : "${THEPKG_SUBDIR_PREFIX:=""}"
 
+
 set -e
+
+# env parsing:
+case $THEPKG_SUBDIR_PREFIX in /*) err "env var \$THEPKG_SUBDIR_PREFIX is not allowed to be in /*"; esac
 
 # thepkg reqired dir / files:
 [ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "${THEPKG_PREFIX:-/}"
 [ -d "${THEPKG_DBPATH?}" ] || mkdir -pv "$THEPKG_DBPATH"
+case ${THEPKG_SUBDIR_PREFIX:+x} in x)
+	[ -d "$THEPKG_PREFIX/$THEPKG_SUBDIR_PREFIX" ] || \
+	mkdir -pv "${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX"
+esac
+
 
 # thepkg log fns:
 log() { printf %s\\n " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; [ ${2-2} -eq 0 ] || exit ${2-2}; }
 
-# env parsing:
-case $THEPKG_SUBDIR_PREFIX in /*) err "env var \$THEPKG_SUBDIR_PREFIX is not allowed to be in /*"; esac
-# todo: consider: escaping THEPKG_SUBDIR_PREFIX var for the sed commad
 
+####			"patches applyed: {TODO: for now not separated per package path for help info}" \
 # args parsing:
 case $1 in
 	-h|--help)
@@ -73,6 +81,11 @@ case $1 in
 			"  (requires: thepkg-noerr-stat0)" \
 			"  [thepkg-extended-verbose]" \
 			"    (1 for now!) print longer messages" \
+			"" \
+			"  (writing ! -> testing )" \
+			"  [thepkg-rmfailed]" \
+			"     when removing files failed," \
+			"     then keep manifest.rmfailed" \
 		; # [patches] help message patches -> patches applyed
 		exit
 	;;
@@ -83,23 +96,27 @@ esac
 # [patch: thepkg-args-parsing-loop] thepkg args parsing loop
 
 case $1 in
-	add|del) action=$1;;
+	add|del) action=$1; shift;;
 	-*) err "unknown option '$1'. see --help";;
 	*)  err "unknown action '$1'. see --help";;
 esac
-shift
 
 # thepkg file detection:
-thepkgname=${1##*/}
+
 unset tar_file
 case $1 in
-	'') err "please specify thepkgname or see --help";;
-	*/*|/*.tar|./*.tar|/*.tar.*|./*.tar.*)
-		# note: for `thepkg del thepkgname.tar`
-		# will not look at the tar file at all,
-		# just detects the name from the name
-		tar_file=$1
-		thepkgname=${thepkgname%%".tar"*}
+'')
+	err "please specify thepkgname or see --help"
+	;;
+*/*|/*.tar|./*.tar|/*.tar.*|./*.tar.*)
+	# note: for `thepkg del thepkgname.tar`
+	# will not look at the tar file at all,
+	# just detects the name from the name
+	tar_file=$1
+	thepkgname=${1%%".tar"*}
+	;;
+[!-]*)
+	thepkgname=${1##*/}
 	;;
 esac
 
@@ -122,9 +139,29 @@ add)
 	{
 		{
 			# tar -k    don't replace existing files, treat them as errors
+
+			# tar opts:
+			tar_opts=k
+			tar_opts=${tar_opts}a
+
+			tar_file=${tar_file:-"-"}
+
+			tar_directory=${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX
+
 			# manifest writing -> pre tar extractind
-			tar -axvf "${tar_file-"-"}" -k -C "${THEPKG_PREFIX:-/}"
-			# manifest writing -> post tar extractind
+			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory"
+
+		# manifest writing -> post tar extractind
+		} | {
+			case $THEPKG_SUBDIR_PREFIX in
+			*)
+				cat
+				;;
+			'')
+				while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
+				case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac
+				;;
+			esac
 		} | {
 			tee /dev/stderr
 		} | {
@@ -133,10 +170,11 @@ add)
 			# manifest writing -> post sort
 		}
 	} > "$THEPKG_DBPATH/$thepkgname"/manifest
-		# TODO: # [patch: thepkg-metadata-thepkg-ext] manifest writing
-		case ${thepkgver:+x} in
-			x) printf "$thepkgver" > "$THEPKG_DBPATH/$thepkgname"/manifest
-		esac
+	# post manifest, metadata writing:
+	# TODO: # [patch: thepkg-metadata-thepkg-ext] post manifest, metadata writing
+	case ${thepkgver:+x} in
+		x) printf "$thepkgver" > "$THEPKG_DBPATH/$thepkgname"/version
+	esac
 
 	# thepkg post install:
 	# TODO: # [patch: thepkg-addfromtar] thepkg post install
@@ -160,27 +198,44 @@ del)
 	[ -e "$THEPKG_DBPATH/$thepkgname" ] || {
 		err "The pkg '$thepkgname' is not installed" 2
 	}
+	manifest_path=$THEPKG_DBPATH/$thepkgname/manifest
+	# thepkg pre del
+	unset _patch_thepkg_rmfailed__exit_on_fail
+	if [ -e "$manifest_path.rmfailed" ]; then
+		manifest_path=$manifest_path.rmfailed
+		_patch_thepkg_rmfailed__exit_on_fail=''
+		###err "The pkg '$thepkgname' haven not been removed last time" 2 # todo: is this good error message
+	fi
+	
 	log "Removing the pkg '$thepkgname'..."
 	(
 		cd "${THEPKG_PREFIX:-/}" || exit
-		while IFS= read -r file; do
+		while IFS= read -r file || case $file in '') false; esac; do
 			case $file in
 				# TODO: # [patch: thepkg-keep-etc] del action -> case
 				*/)
-					rmdir -v "$file" 2>/dev/null || :
+					rmdir "$file" 2>/dev/null || :
 				;;
 				*)
-					rm -v "$file"
+					rm -v "$file" || {
+						# thepkg del rm failed
+						case ${_patch_thepkg_rmfailed__exit_on_fail+x} in
+							x) false;;
+							*) printf %s\\n "$file" >> "$THEPKG_DBPATH/$thepkgname"/manifest.rmfailed;;
+						esac || \
+						false
+					}
 				;;
 			esac
 		done
-	) < "$THEPKG_DBPATH/$thepkgname"/manifest
+	) < "$manifest_path"
 	
-	rm -v "$THEPKG_DBPATH/$thepkgname"/manifest
+	rm -v "$manifest_path"
 	# thepkg post manifest removal:
 	# TODO: # [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
+	[ -e "$THEPKG_DBPATH/$thepkgname"/version ] && rm -v "$THEPKG_DBPATH/$thepkgname"/version
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
-*) err "use --help";;
+*) err "see --help";;
 esac
