@@ -5,28 +5,43 @@
 # wget -qO- https://github.com/denisde4ev/thepkg/raw/master/thepkg-install.sh | DOWNLOADER='wget -qO-' THEPKG_PREFIX=/ THEPKG_DBPATH=/var/db/thepkg sh -
 
 
+## export THEPKG_PREFIX="" # by default install to root '/'
+## # export THEPKG_DBPATH=$THEPKG_PREFIX/var/db/thepkg
+## # export THEPKG_INSTALL_FILE=thepkg # can be: ('thepkg' | 'thepkg-allpatched')
+## # export THEPKG_INSTALL_FILE_TARGET=thepkg # if you want different name from THEPKG_INSTALL_FILE
+## export THEPKG_INSTALL_PATH=${THEPKG_PREFIX?}/bin/${THEPKG_INSTALL_FILE_TARGET:-${THEPKG_INSTALL_FILE:-thepkg}
+
+
 set -eu
 
-: "${THEPKG_PREFIX:=""}" # by default install to root '/'
+
+export THEPKG_INSTALL_PATH=${THEPKG_PREFIX?}/bin/${THEPKG_INSTALL_FILE_TARGET:-${THEPKG_INSTALL_FILE:-thepkg}
+
+case $USER in
+root)
+	: "${THEPKG_PREFIX:=""}"
+	;;
+*)
+	# TODO: use XDG_* env vars
+	: "${THEPKG_PREFIX:="${HOME:?}/.local/share/thepkg"}"
+	# consider: : "${THEPKG_DBPATH:="${HOME:?}/.config/thepkg/db"}"
+
+	### TODO:
+	#### fix xdg vars
+	###i() {
+	###	while case $# in [012]) false; esac; do
+	###		
+	###	done
+	###}
+	###i ${}
+	;;
+esac
 : "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
-: "${THEPKG_INSTALL_FILE:=thepkg}"
+# : "${THEPKG_INSTALL_FILE:=thepkg}" # can be: ('thepkg' | 'thepkg-allpatched')
+# : "${THEPKG_INSTALL_FILE_TARGET:=thepkg}" # if you want different name from THEPKG_INSTALL_FILE
 : "${THEPKG_INSTALL_PATH:="${THEPKG_PREFIX?}/bin/${THEPKG_INSTALL_FILE_TARGET:-${THEPKG_INSTALL_FILE:-thepkg}"}}"
 
-# you can specify custom path by: `... | ... THEPKG_INSTALL_PATH=.local/bin/thepkg sh -`
 
-# TODO: TEST IF ln WORKS AS EXPECTED
-# to instal for user use: `... | ... THEPKG_PREFIX="$HOME/.local/bin" `
-
-# and then add '~/.local/share/thepkg/bin:~/.local/share/thepkg/usr/bin' to your PATH var OR link files by: `
-# mkdir -v -p ~/.local/bin # in case it does not exist yet
-# cd ~/.local/share/thepkg && {
-# mkdir -v -p usr
-# ln -v -snT ../../../bin usr/bin
-# ln -v -snT usr/bin bin
-# ln -v -snT ../../../.config/thepkg-etc etc
-# # note: there might be many more dirs to link but those are the main one
-# `
-# TODO:! better install some kind of filesystem-user
 
 log() { printf %s\\n " -> $1"; }
 
@@ -94,3 +109,24 @@ log " -> apply changed vairables..."; {
 		#+: "\${THEPKG_DBPATH:="$THEPKG_DBPATH"}"
 	esac
 }
+
+
+[ "$USER" = root ] && [ "$THEPKG_PREFIX" = "${HOME:-__nohome__}/.local/share/thepkg" ] && { log 'user links...'
+	printf %s >&2 "do you want to create typicall user installation links? [Y/n] "
+	read i </dev/tty || i=${i:=n}
+	case $i in [Yy]|[Yy]es|YES)
+		# TODO: TEST IF ln WORKS AS EXPECTED
+	# to instal for user use: `... | ... THEPKG_PREFIX="$HOME/.local/bin" `
+
+	# and then add '~/.local/share/thepkg/bin:~/.local/share/thepkg/usr/bin' to your PATH var OR link files by: `
+	# mkdir -v -p ~/.local/bin # in case it does not exist yet
+		
+	# mkdir -v -p usr
+	# ln -v -snT ../../../bin usr/bin
+	# ln -v -snT usr/bin bin
+	# ln -v -snT ../../../.config/thepkg-etc etc
+	# # note: there might be many more dirs to link but those are the main one
+	# `
+	# TODO:! better install some kind of filesystem-user
+	esac
+esac
