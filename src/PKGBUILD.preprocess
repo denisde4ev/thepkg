@@ -1,0 +1,109 @@
+!! BUILDFOR=${BUILDFOR:-PKGBUILD} # expected to be in PKGBUILD|APKBUILD|THEPKGBUILD
+!!
+!| case $BUILDFOR in THEPKGBUILD)
+#!/bin/sh
+!! esac
+!!
+!| arr() {
+!| 	#eval "$1=$2" # for now not used
+!| 	case $BUILDFOR in
+!| 	PKGBUILD) printf %s\\n "$1=($2)${3+ $3}";;
+!| 	*)        printf %s\\n "$1='$2'${3+ $3}";;
+!| 	esac
+!! }
+!!
+!| str() {
+!| 	eval "$1=$2"
+!| 	printf %s\\n "$1=$2${3+ $3}"
+!! }
+!!
+!!
+!! str pkgname thepkg-git
+!! str _pkgname "${pkgname%-git}"
+!! str pkgver "${pkgver?}"
+pkgrel=1
+pkgdesc="simple package manager powered by tar"
+!! arr arch any
+!! str url "https://github.com/denisde4ev/thepkg"
+!! arr license '' "# IDK FOR NOW, maybe: 'custom:WTFPL' or 'BSD'"
+!! #groups=()
+!! arr depends 'sh tar coreutils'
+!! arr makedepends 'pp-denisde4ev' '# install from https://github.com/denisde4ev-packages/pp-denisde4ev/releases'
+!! arr provides "$_pkgname"
+!! arr conflicts "$_pkgname"
+!! #replaces=()
+!! #backup=()
+!! #options=()
+!! #install=
+!! arr source "$_pkgname::git+${url}.git"
+!! #noextract=()
+!! arr md5sums SKIP
+
+pkgver() {
+	cd "$srcdir/$_pkgname"
+
+	# Git, tags available
+	printf "%s" "$(git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
+!!
+!! #!| case $pkgname in
+!! #!|    *-bazaar) # Bazaar
+!! #	printf "r%s" "$(bzr revno)"
+!! #!| ;; *-git # Git, tags available
+!! #	printf "%s" "$(git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
+!! #!| ;; *-git # Git, no tags available
+!! #	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+!! #!| ;; *-mercurial # Mercurial
+!! #	printf "r%s.%s" "$(hg identify -n)" "$(hg identify -i)"
+!! #!| ;; *-subversion # Subversion
+!! #	printf "r%s" "$(svnversion | tr -d 'A-z')"
+!! #!! esac
+}
+
+!! #prepare() {
+!! #	cd "$srcdir/$_pkgname"
+!! #	patch -p1 -i "$srcdir/$_pkgname.patch"
+!! #}
+!!
+build() {
+	cd "$srcdir/$_pkgname/src"
+	./build.sh
+}
+
+!! #check() {
+!! #	cd "$srcdir/$_pkgname"
+!! #	./check.sh
+!! #}
+!!
+package() {
+	cd "$srcdir/$_pkgname/build"
+	install -dM755 thepkg "$pkgdir"/usr/bin/
+}
+!! case $BUILDFOR in THEPKGBUILD) ;; *) return; esac
+
+
+
+case ${0##*/} in THEPKGBUILD)
+	cd "${0%/*}" || exit
+	log() { printf %s\\n " -> $1"; }
+	die() { log "$1"; exit "${2-2}"; }
+	run() { log "$1..."; "$@"; }
+
+	mkdir -pv src pkg
+	srcdir=$PWD/src
+	pkgdir=$PWD/pkg
+
+!! #	run prepare
+	run build
+!! #	run check
+	run package
+	tar ..... #TODO
+!! echo TODO:! HERE tar command not ready; (exit 100)
+	case $1 in -i)
+		case $USER in
+			root) sudo='';;
+			*) sudo=sudo;;
+		esac
+		sudo thepkg add !{echo $pkgname}! < "$tar"
+	esac
+
+esac

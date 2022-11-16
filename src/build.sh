@@ -1,36 +1,22 @@
 #!/bin/sh
+set -eu
+cd "${0%/*}" || exit
 
-# extract thepkg-patches to 2 files: 'thepkg' and 'thepkg-allpatched'
-
-
-
-cd "${0%/*}/.." || exit
+rm ../thepkg ../thepkg-allpatched
 
 
-# too simple and not pure sh way:
-#sed -n 's/^[ -]//p' thepkg.patch > thepkg
-#sed -n 's/^[ +]//p' thepkg.patch > thepkg-allpatched
+./thepkg.preprocess > ../thepkg
 
+THEPKG__ALLPATCHED__=1 \
+THEPKG_NOERR_STAT0=1 \
+THEPKG_SUBDIR_PREFIX=1 \
+THEPKG_ADDFROMTAR=1 \
+THEPKG_THEPKGVER_ARG_PARSING=1 \
+THEPKG_UPGRADE=1 \
+THEPKG_METADATA_THEPKG_EXT=1 \
+THEPKG_EXTENDED_VERBOSE=1 \
+THEPKG_RMFAILED=1 \
+THEPKG_KEEP_ETC=1 \
+./thepkg.preprocess > ../thepkg-allpatched
 
-while IFS= read -r line; do
-	##case $line in *'err'*)
-	##	set -x
-	##	( printf %s\\n line="$line" | bat -A )
-	##;; esac
-	
-	case $line in
-		[-\ ]*) printf %s\\n "${line#?}" >&3
-		#: to 3
-		;;
-	esac
-	case $line in
-		[\+\ ]*) printf %s\\n "${line#?}" >&4
-		#: to 4
-		;;
-	esac
-	##case $line in *'err'*) set +x;; esac
-done <./src/thepkg.patch 3>./build/thepkg 4>./build/thepkg-allpatched
-
-
-# same as my (using sed): /^/\ https://github.com/denisde4ev/bin/blob/master/patch-splitter
-
+chmod -v +x ../thepkg ../thepkg-allpatched
