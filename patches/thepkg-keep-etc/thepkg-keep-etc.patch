@@ -1,5 +1,0 @@
---- thepkg
-+++ thepkg-keep-etc
-@@ -0,0 +0,0 @@
--				# [patch: thepkg-keep-etc] del action -> case
-+				# TODO: # [patch: thepkg-keep-etc] del action -> case
