@@ -1,0 +1,104 @@
+<==> S
+!! ops="$ops${ops:+ }-S"
+op_S() {
+	case $1 in */*)
+		thepkg add "$@" < "$1"
+		return
+	esac
+	thepkg add "$@"
+}
+<==> Q
+!! ops="$ops${ops:+ }-Q"
+op_Q() {
+	case $# in 0)
+		case $op in
+			-Q) ls -FA1 -- "$THEPKG_DBPATH"; return;;
+			-Qq) ( cd "$THEPKG_DBPATH" && printf %s\\n * ); return;;
+			-Qi|-Ql|-Qlq) set -- "$THEPKG_DBPATH"/*;;
+		esac
+	esac
+
+	x=0
+	x_input=1
+	while case $# in 0) false; esac; do i=$1
+		case $i in -) input_i || return; esac
+
+		case $i in
+			*/*) j=$i;;
+			*) j=$THEPKG_DBPATH/$i;;
+		esac
+
+		if [ -e "$j" ]; then
+			case $op in
+				-Q) ls -FA1 -d -- "$j";;
+				-Qq) printf %s\\n "$i";;
+				-Qi) printf %s\\n "$j:"; ls -FA1 -- "$j"; echo;;
+				-Ql) printf %s\\n "$j:"; cat "$j/manifest"; echo;;
+				-Qlq) cat "$j/manifest";;
+			esac
+		else
+			printf %s\\n "E: pkg not installed: '$i'" >&2
+			x=1
+		fi
+
+	shift; done
+	return "$x"
+}
+!!
+!! # todo: consider optimizing by adding `case in -Qq|Qi|...) op_Q`
+!! ops="$ops${ops:+ }-Qq -Qi -Ql -Qlq"
+op_Qq(){ op_Q "$@";}
+op_Qi(){ op_Q "$@";}
+op_Ql(){ op_Q "$@";}
+op_Qlq(){ op_Q "$@";}
+<==> Qo
+op_Qo() {
+	case $# in 0) printf %s\\n " x> specify <pkg>"; return 2; esac
+
+	x=0
+	cd "$THEPKG_DBPATH" || return
+
+	while case $# in 0) false; esac; do i=$1
+		case $i in -) input_i || return; esac
+
+		case $i in
+			*/*) j=$i;;
+			*) j=$(which 2>/dev/null "$i") && case $j in */*) ;; *) false; esac;;
+		esac || {
+			x=1
+			printf %s\\n >&2 "E: cant find absolute path for '$i'"
+			continue
+		}
+		j=${j#"$THEPKG_PREFIX"}; j=${j#"/"} # note: this will fail if bin from package have been installed in symlink ( for example /bin symlink to /usr/bin )
+
+		case $op in
+			-Qo)
+				printf %s\\n "$i:" # note: will print before is chekced if any results
+				grep -xFe "$j" -- */manifest || {
+					x=1
+					printf %s\\n >&2 "E: no pkg owns: '$j'"
+				}
+				echo
+				;;
+			-Qoq)
+				xx=1
+				for ii in */manifest; do
+					grep -q -xFe "$j" -- "$ii" || continue
+					xx=0
+					printf %s\\n "${ii%/*}"
+				done
+				case $xx in 1)
+					x=1
+					printf %s\\n >&2 "E: no pkg owns: '$j'"
+				esac
+			;;
+		esac
+	shift; done
+	return "$x"
+}
+op_Qoq(){ op_Qo "$@";}
+<==> R
+!! ops="$ops${ops:+ }-R"
+op_R() {
+	thepkg del "$@"
+}

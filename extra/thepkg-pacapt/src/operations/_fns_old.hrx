@@ -1,0 +1,125 @@
+<==> S
+thepkg_S() {
+	case $1 in */*)
+		thepkg add "$@" < "$1"
+		return
+	esac
+	thepkg add "$@"
+}
+<==> Q
+thepkg_Q() {
+	case $# in 0)
+		ls -FA1 -- "$THEPKG_DBPATH"
+		return
+	esac
+
+	x=0
+	for i; do
+		case $i in
+			*/*) j=$i;;
+			*) j=$THEPKG_DBPATH/$i;;
+		esac
+
+		if [ -e "$j" ]; then
+			ls -FA1 -d -- "$j"
+		else
+			printf %s\\n "no: $i" >&2
+			x=1
+		fi
+	done
+	return "$x"
+}
+<==> Qq
+thepkg_Qq() {
+	case $# in 0)
+		( cd "$THEPKG_DBPATH" && printf %s\\n * )
+		return
+	esac
+
+	x=0
+	for i; do
+		case $i in
+			*/*) j=$i;;
+			*) j=$THEPKG_DBPATH/$i;;
+		esac
+
+		if [ -e "$j" ]; then
+			printf %s\\n "$i"
+		else
+			printf %s\\n "no: $i" >&2
+			x=1
+		fi
+	done
+	return "$x"
+}
+<==> Qi
+thepkg_Qi() {
+	case $# in 0)
+		set -- "$THEPKG_DBPATH"/*
+	esac
+
+	x=0
+	for i; do
+		case $i in
+			*/*) j=$i;;
+			*) j=$THEPKG_DBPATH/$i;;
+		esac
+		if [ -e "$j" ]; then
+			printf %s\\n "$j:"
+			ls -FA1 -- "$j" 
+			echo
+		else
+			printf %s\\n "no: $i" >&2
+			x=1
+		fi
+	done
+	return "$x"
+}
+<==> Ql
+thepkg_Ql() {
+	case $# in 0)
+		set -- "$THEPKG_DBPATH"/*
+	esac
+
+	x=0
+	for i; do
+		case $i in
+			*/*) j=$i;;
+			*) j=$THEPKG_DBPATH/$i;;
+		esac
+		if [ -e "$j" ]; then
+			printf %s\\n "$j:"
+			cat "$j/manifest" 
+			echo
+		else
+			printf %s\\n "no: $i" >&2
+			x=1
+		fi
+	done
+	return "$x"
+}
+<==> Qlq
+thepkg_Qlq() {
+	case $# in 0)
+		set -- "$THEPKG_DBPATH"/*
+	esac
+
+	x=0
+	for i; do
+		case $i in
+			*/*) j=$i;;
+			*) j=$THEPKG_DBPATH/$i;;
+		esac
+		if [ -e "$j" ]; then
+			cat "$j/manifest"
+		else
+			printf %s\\n "no: $i" >&2
+			x=1
+		fi
+	done
+	return "$x"
+}
+<==> R
+thepkg_R() {
+	thepkg del "$@"
+}

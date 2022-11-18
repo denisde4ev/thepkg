@@ -1,0 +1,86 @@
+#!/usr/bin/env pp
+#!/bin/sh
+set -eu
+!!
+!! case $__FILE__ in */*) cd "${__FILE__%/*}"; esac || exit
+!! ops='-S -Q -Qq -Qi -Ql -Qlq -Qo -Qoq -R' # fake it.^2
+!!
+
+case ${1?specify operation, see --help} in
+--help)
+	printf %s\\n \
+		"Usage: ${0##*/} -<opt> [pkg]..." \
+		"       ${0##*/} env [prog] [arg]..." \
+		" -P  print supported options" \
+		"" \
+		"Arch's pacman-like wrapper for thepkg." \
+	;
+	exit
+	;;
+-P)
+	if [ -t 1 ]; then
+		printf %s\\n "!{printf %s "${ops}" | sed 's/ /, /g'}!"
+	else
+		printf %s\\n  !{printf %s "${ops}"}! # in case scripts want to detect supported args
+	fi
+	exit
+esac
+
+
+: "${THEPKG_PREFIX:=}"
+: "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
+
+
+# external vars: `x` `x_input`
+# o: changes `i` var
+# o: return code
+# note: prints err
+input_i() {
+	read -r i || { # do trim
+		case $x in 1) return 1; esac
+		case $x_input in 1)
+			printf %s\\n >&2 "E: empty input"
+			return 1
+		esac
+	}
+	x_input=0
+	case $i in -) printf %s\\n >&2 "e: bad input: '-'"; esac
+	set -- "$@" -
+	# also allow input to use which. (check if this is the bechaviour in pacman, probably not)
+}
+
+!! ##ops='' # fake it.^2
+!!
+!! # TODO:! THIS IS BROKEN, pp creates subshell and op var is not set in next lines!
+!! # todo: how to define `op` var in --help lines
+!! #pp ./operations/[!_]*
+!! ##ops='-S -Q -Qq -Qi -Ql -Qlq -R' # fake it.
+!! sed '/^<==>/d;/^!!/d' ./operations/_fns.hrx # fake it(2)
+
+op=$1; shift
+
+!! # W: assume there will be '-S|-R|-Q' in $ops var
+case $op in
+
+	# more human input
+	install|add) op=-S;;
+	remove|del|uninstall) op=-R;;
+	query) op=-Q;;
+
+	env)
+		case $# in
+		0)
+			printf %s\\n THEPKG_PREFIX="$THEPKG_PREFIX" THEPKG_DBPATH="$THEPKG_DBPATH"
+			;;
+		*)
+			export THEPKG_PREFIX THEPKG_DBPATH
+			"$@"
+		esac
+		exit
+	;;
+esac
+
+case $op in
+	!{printf %s "${ops}" | sed 's/ /|/g'}!) op_"${op#-}" "$@";;
+	*) printf %s\\n >&2 " x> unknown opt/arg: '$op'"; exit 2;;
+esac
