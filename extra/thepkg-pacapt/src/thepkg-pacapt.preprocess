@@ -18,11 +18,9 @@ case ${1?specify operation, see --help} in
 	exit
 	;;
 -P)
-	if [ -t 1 ]; then
-		printf %s\\n "!{printf %s "${ops}" | sed 's/ /, /g'}!"
-	else
-		printf %s\\n  !{printf %s "${ops}"}! # in case scripts want to detect supported args
-	fi
+	if [ -t 1 ]; then s=', '; else s='\n'; fi
+	printf %s"$s" !{printf %s "${ops%" "*}"}!
+	printf %s\\n !{printf %s "${ops##*" "}"}!
 	exit
 esac
 

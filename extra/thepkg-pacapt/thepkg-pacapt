@@ -13,11 +13,9 @@ case ${1?specify operation, see --help} in
 	exit
 	;;
 -P)
-	if [ -t 1 ]; then
-		printf %s\\n "-S, -Q, -Qq, -Qi, -Ql, -Qlq, -Qo, -Qoq, -R"
-	else
-		printf %s\\n  -S -Q -Qq -Qi -Ql -Qlq -Qo -Qoq -R # in case scripts want to detect supported args
-	fi
+	if [ -t 1 ]; then s=', '; else s='\n'; fi
+	printf %s"$s" -S -Q -Qq -Qi -Ql -Qlq -Qo -Qoq
+	printf %s\\n -R
 	exit
 esac
 
