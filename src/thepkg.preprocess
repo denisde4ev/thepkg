@@ -1,24 +1,16 @@
 #!/usr/bin/env pp
 #!/bin/sh
-case $1 in -x) set -x; shift; esac # debug opt
+set -eu
 
-# thepkg config / env vars:
 : "${THEPKG_PREFIX:=""}"
 : "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
 !| case ${THEPKGCONFIG_SUBDIR_PREFIX+x} in x)
 : "${THEPKG_SUBDIR_PREFIX:=""}"
-!| 	;; *)
-# [patch: thepkg-subdir-prefix] thepkg config / env vars
 !! esac
-
-
-set -e
 
 # env parsing:
 !| case ${THEPKGCONFIG_SUBDIR_PREFIX+x} in x)
 case $THEPKG_SUBDIR_PREFIX in /*) err "env var \$THEPKG_SUBDIR_PREFIX is not allowed to be in /*"; esac
-!| 	;; *)
-# [patch: thepkg-subdir-prefix] env parsing
 !! esac
 
 # thepkg reqired dir / files:
@@ -29,83 +21,81 @@ case ${THEPKG_SUBDIR_PREFIX:+x} in x)
 	[ -d "$THEPKG_PREFIX/$THEPKG_SUBDIR_PREFIX" ] || \
 	mkdir -pv "${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX"
 esac
-!| 	;; *)
-# [patch: thepkg-subdir-prefix] thepkg reqired dir / files:
 !! esac
 
 
-# thepkg log fns:
+# log fns:
 log() { printf %s\\n " -> $1"; }
 !| case ${THEPKGCONFIG_NOERR_STAT0+x} in x)
 err() { printf %s\\n >&2 " x> $1"; [ ${2-2} -eq 0 ] || exit ${2-2}; }
 !| 	;; *)
-err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
+err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkgconfig_noerr_stat0]
 !! esac
 
 
-####			"patches applyed: {TODO: for now not separated per package path for help info}" \
 # args parsing:
 case $1 in
 	-h|--help)
 		printf %s\\n \
-			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
-			"" \
-			"patches applyed:" \
+			"Usage: <STDIN thepkgname.tar> | ${0##*/} <add|del> <thepkgname>" \
 !| case ${THEPKGCONFIG__ALLPATCHED__+x} in x)
+			"       ${0##*/} <add|del> </path/to/thepkgname[@version].tar.qz>" \
+			"" \
+			"features enabled:" \
 			"  (not tested)" \
-			"  [thepkg-addfromtar]" \
-			"    install from tar and use (tar -a) autodetect if its for example '.tar.gz'." \
-			"    thepkgname may be: </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
+			"  [thepkgconfig_addfromtar]" \
+			"    install from tar and use (tar -a) autodetect if its for example '.tar.gz'/'.tar.*'/'.tar'." \
+			"    arg may be: </path/to/thepkgname.tar.qz>" \
 			"" \
 			"  (not done)" \
-			"  [thepkg-thepkgver-arg-parsing]" \
+			"  [thepkgconfig_thepkgver_arg_parsing]" \
 			"    thepkgname may be <thepkgname@v1.0.0>" \
 			"" \
 			"  (not done)" \
-			"  [thepkg-subdir-prefix]" \
+			"  [thepkgconfig_subdir_prefix]" \
 			"    use env var \$THEPKG_SUBDIR_PREFIX as \$THEPKG_PREFIX sub dir," \
 			"    but stil write it to \$THEPKG_DBPATH/manifest file" \
 			"" \
 			"  (internal)" \
 			"  (not done at all)" \
-			"  [thepkg-args-parsing-loop]" \
+			"  [thepkgconfig_args_parsing_loop]" \
 			"    prepare code for args parsing patches" \
 			"" \
 			"  (requires: thepkg-args-parsing-loop)" \
 			"  (not done at all)" \
-			"  [thepkg-metadata]" \
+			"  [thepkgconfig_metadata]" \
 			"    when thepkgname is in (*.thepkg.*|*.thepkg) or --metadata used. then metadata is read from the start of the file" \
 			"" \
-			"  (not done at all)" \
-			"  [thepkg-keep-etc]" \
+			"  (not even started / just a plan)" \
+			"  [thepkgconfig_keep_etc]" \
 			"    keep files from /env, exept when --nosave is specifyed" \
 			"" \
 			"  (not done at all)" \
-			"  [thepkg-metadata-thepkg-ext]" \
+			"  [thepkgconfig_metadata_thepkg_ext]" \
 			"    parse '*.thepkg' file that contains metadata about the package" \
 			"    used only when extention is (*.thepkg) or when --thepkg-metadata specifyed" \
 			"    .thepkg file is tar file with prepended metadata prepended data" \
 			"" \
 			"  (not done at all)" \
-			"  [thepkg-upgrade]" \
+			"  [thepkgconfig_upgrade]" \
 			"    upgrade package" \
 			"" \
 			"  (done)" \
 			"  (internal)" \
-			"  [thepkg-noerr-stat0]" \
+			"  [thepkgconfig_noerr_stat0]" \
 			"    err fn to not exit when \$2=0" \
 			"" \
 			"  (done)" \
-			"  (requires: thepkg-noerr-stat0)" \
-			"  [thepkg-extended-verbose]" \
+			"  (requires: thepkgconfig_noerr_stat0)" \
+			"  [thepkgconfig_extended_verbose]" \
 			"    (1 for now!) print longer messages" \
 			"" \
 			"  (writing ! -> testing )" \
-			"  [thepkg-rmfailed]" \
+			"  [thepkgconfig_rmfailed]" \
 			"     when removing files failed," \
 			"     then keep manifest.rmfailed" \
 !! esac
-		; # [patches] help message patches -> patches applyed
+		;
 		exit
 	;;
 	'') err "please specify action add/del or see --help";;
@@ -113,7 +103,7 @@ esac
 
 # thepkg args parsing loop:
 !| case ${THEPKGCONFIG_ARGS_PARSING_LOOP+x} in x|'') # note: unimplemented patch
-# [patch: thepkg-args-parsing-loop] thepkg args parsing loop
+# [patch: thepkg-args-parsing-loop] TODO: thepkg args parsing loop
 !! esac
 
 case $1 in
@@ -123,19 +113,14 @@ case $1 in
 esac
 
 # thepkg file detection:
-
-!| case ${THEPKGCONFIG_ADDFROMTAR+x} in '') ###### swap case in '' from this point
-# [patch: thepkg-addfromtar] thepkg file detection
-!| 	;; *)
+!| case ${THEPKGCONFIG_ADDFROMTAR+x} in x)
 unset tar_file
 !! esac
 case $1 in
 '')
 	err "please specify thepkgname or see --help"
 	;;
-!| case ${THEPKGCONFIG_ADDFROMTAR+x} in '')
-# [patch: thepkg-addfromtar] thepkg file detection -> case
-!| 	;; *)
+!| case ${THEPKGCONFIG_ADDFROMTAR+x} in x)
 */*|/*.tar|./*.tar|/*.tar.*|./*.tar.*)
 	# note: for `thepkg del thepkgname.tar`
 	# will not look at the tar file at all,
@@ -151,9 +136,7 @@ esac
 
 
 # thepkg post file detection:
-!| case ${THEPKGCONFIG_THEPKGVER_ARG_PARSING+x} in '')
-# [path: thepkg-thepkgver-arg-parsing] thepkg post file detection
-!| 	;; *)
+!| case ${THEPKGCONFIG_THEPKGVER_ARG_PARSING+x} in x)
 thepkgver=${thepkgname#*"@"}
 thepkgname=${thepkgname%"@$thepkgver"}
 !! esac
@@ -163,9 +146,7 @@ case $action in
 add)
 	[ ! -e "$THEPKG_DBPATH/$thepkgname" ] || {
 		err "The pkg '$thepkgname' is already installed" 3
-!| case ${THEPKGCONFIG_UPGRADE+x} in '')
-		# [patch: thepkg-upgrade] add action -> already installed
-!| 	;; *)
+!| case ${THEPKGCONFIG_UPGRADE+x} in x)
 		# TODO: # [patch: thepkg-upgrade] add action -> already installed
 !! esac
 	}
@@ -179,35 +160,27 @@ add)
 
 			# tar opts:
 			tar_opts=k
-!| case ${THEPKGCONFIG_ADDFROMTAR+x} in '')
-			# [patch: thepkg-addfromtar]
-!| 	;; *)
+!| case ${THEPKGCONFIG_ADDFROMTAR+x} in x)
 			tar_opts=${tar_opts}a
 !! esac
 
 !| case ${THEPKGCONFIG_ADDFROMTAR+x} in '')
-			tar_file=- # [patch: thepkg-addfromtar]
+			tar_file=-
 !| 	;; *)
 			tar_file=${tar_file:-"-"}
 !! esac
 
 !| case ${THEPKGCONFIG_SUBDIR_PREFIX+x} in '')
-			tar_directory=${THEPKG_PREFIX:-/} # [patch: thepkg-subdir-prefix] tar opts
+			tar_directory=${THEPKG_PREFIX:-/}
 !| 	;; *)
 			tar_directory=${THEPKG_PREFIX:-/}/$THEPKG_SUBDIR_PREFIX
 !! esac
 
 			# manifest writing -> pre tar extractind
-!| case ${THEPKGCONFIG_ADDFROMTAR+x} in '')
-			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory" # [patch: thepkg-addfromtar]
-!| 	;; *)
 			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory"
-!! esac
 
 		# manifest writing -> post tar extractind
-!| case ${THEPKGCONFIG_SUBDIR_PREFIX+x} in '')
-		# [patch: thepkg-subdir-prefix] manifest writing -> post tar extractind
-!| 	;; *)
+!| case ${THEPKGCONFIG_SUBDIR_PREFIX+x} in x)
 		} | {
 			case $THEPKG_SUBDIR_PREFIX in
 			*)
@@ -228,30 +201,24 @@ add)
 		}
 	} > "$THEPKG_DBPATH/$thepkgname"/manifest
 	# post manifest, metadata writing:
-!| case ${THEPKGCONFIG_METADATA_THEPKG_EXT+x} in '')
-	# [patch: thepkg-metadata-thepkg-ext] post manifest, metadata writing
-!| 	;; *)
+!| case ${THEPKGCONFIG_METADATA_THEPKG_EXT+x} in x)
 	# TODO: # [patch: thepkg-metadata-thepkg-ext] post manifest, metadata writing
 !! esac
-!| case ${THEPKGCONFIG_THEPKGVER_ARG_PARSING+x} in '')
-	# [patch: thepkg-thepkgver-arg-parsing] post manifest, metadata writing
-!| 	;; *)
+!| case ${THEPKGCONFIG_THEPKGVER_ARG_PARSING+x} in x)
 	case ${thepkgver:+x} in
 		x) printf "$thepkgver" > "$THEPKG_DBPATH/$thepkgname"/version
 	esac
 !! esac
 
 	# thepkg post install:
-!| case ${THEPKGCONFIG_ADDFROMTAR+x} in '')
-	# [patch: thepkg-addfromtar] thepkg post install
-!| 	;; *)
+!| case ${THEPKGCONFIG_ADDFROMTAR+x} in x)
 	# TODO: # [patch: thepkg-addfromtar] thepkg post install
 !! esac
 
 	# test -s   exists and has a size greater than zero
 	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
 !| case ${THEPKGCONFIG_EXTENDED_VERBOSE+x} in '')
-		err "empty or missing manifest file." # [patch: thepkg-extended-verbose]
+		err "empty or missing manifest file." 3
 !| 	;; *)
 		# detect when went wrong
 		# reason: `tar` is ran in pipe
@@ -272,10 +239,9 @@ del)
 		err "The pkg '$thepkgname' is not installed" 2
 	}
 	manifest_path=$THEPKG_DBPATH/$thepkgname/manifest
+
 	# thepkg pre del
-!| case ${THEPKGCONFIG_RMFAILED+x} in '')
-	# [patch: thepkg-rmfailed] pre del
-!| 	;; *)
+!| case ${THEPKGCONFIG_RMFAILED+x} in x)
 	unset _patch_thepkg_rmfailed__exit_on_fail
 	if [ -e "$manifest_path.rmfailed" ]; then
 		manifest_path=$manifest_path.rmfailed
@@ -289,9 +255,7 @@ del)
 		cd "${THEPKG_PREFIX:-/}" || exit
 		while IFS= read -r file || case $file in '') false; esac; do
 			case $file in
-!| case ${THEPKGCONFIG_KEEP_ETC+x} in '')
-				# [patch: thepkg-keep-etc] del action -> case
-!| 	;; *)
+!| case ${THEPKGCONFIG_KEEP_ETC+x} in x)
 				# TODO: # [patch: thepkg-keep-etc] del action -> case
 !! esac
 				*/)
@@ -300,9 +264,7 @@ del)
 				*)
 					rm -v "$file" || {
 						# thepkg del rm failed
-!| case ${THEPKGCONFIG_RMFAILED+x} in '')
-						# [patch: thepkg-rmfailed] thepkg del rm failed
-!| 	;; *)
+!| case ${THEPKGCONFIG_RMFAILED+x} in x)
 						case ${_patch_thepkg_rmfailed__exit_on_fail+x} in
 							x) false;;
 							*) printf %s\\n "$file" >> "$THEPKG_DBPATH/$thepkgname"/manifest.rmfailed;;
@@ -316,20 +278,18 @@ del)
 	) < "$manifest_path"
 	
 	rm -v "$manifest_path"
+
+
 	# thepkg post manifest removal:
-!| case ${THEPKGCONFIG_METADATA_THEPKG_EXT+x} in '')
-	# [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
-!| 	;; *)
+!| case ${THEPKGCONFIG_METADATA_THEPKG_EXT+x} in x)
 	# TODO: # [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
 !! esac
 !!#
-!| case ${THEPKGCONFIG_THEPKGVER_ARG_PARSING+x} in '')
-	# [patch: thepkg-thepkgver-arg-parsing] thepkg post manifest removal
-!| 	;; *)
+!| case ${THEPKGCONFIG_THEPKGVER_ARG_PARSING+x} in x)
 	[ -e "$THEPKG_DBPATH/$thepkgname"/version ] && rm -v "$THEPKG_DBPATH/$thepkgname"/version
 !! esac
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
-*) err "see --help";;
+*) err "unknown: '$1'";;
 esac

@@ -1,44 +1,34 @@
 #!/bin/sh
-case $1 in -x) set -x; shift; esac # debug opt
+set -eu
 
-# thepkg config / env vars:
 : "${THEPKG_PREFIX:=""}"
 : "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
-# [patch: thepkg-subdir-prefix] thepkg config / env vars
-
-
-set -e
 
 # env parsing:
-# [patch: thepkg-subdir-prefix] env parsing
 
 # thepkg reqired dir / files:
 [ -d "${THEPKG_PREFIX?}" ] || mkdir -pv "${THEPKG_PREFIX:-/}"
 [ -d "${THEPKG_DBPATH?}" ] || mkdir -pv "$THEPKG_DBPATH"
-# [patch: thepkg-subdir-prefix] thepkg reqired dir / files:
 
 
-# thepkg log fns:
+# log fns:
 log() { printf %s\\n " -> $1"; }
-err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
+err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkgconfig_noerr_stat0]
 
 
-####			"patches applyed: {TODO: for now not separated per package path for help info}" \
 # args parsing:
 case $1 in
 	-h|--help)
 		printf %s\\n \
-			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
-			"" \
-			"patches applyed:" \
-		; # [patches] help message patches -> patches applyed
+			"Usage: <STDIN thepkgname.tar> | ${0##*/} <add|del> <thepkgname>" \
+		;
 		exit
 	;;
 	'') err "please specify action add/del or see --help";;
 esac
 
 # thepkg args parsing loop:
-# [patch: thepkg-args-parsing-loop] thepkg args parsing loop
+# [patch: thepkg-args-parsing-loop] TODO: thepkg args parsing loop
 
 case $1 in
 	add|del) action=$1; shift;;
@@ -47,13 +37,10 @@ case $1 in
 esac
 
 # thepkg file detection:
-
-# [patch: thepkg-addfromtar] thepkg file detection
 case $1 in
 '')
 	err "please specify thepkgname or see --help"
 	;;
-# [patch: thepkg-addfromtar] thepkg file detection -> case
 [!-]*)
 	thepkgname=${1##*/}
 	;;
@@ -61,14 +48,12 @@ esac
 
 
 # thepkg post file detection:
-# [path: thepkg-thepkgver-arg-parsing] thepkg post file detection
 
 # thepkg action detection:
 case $action in
 add)
 	[ ! -e "$THEPKG_DBPATH/$thepkgname" ] || {
 		err "The pkg '$thepkgname' is already installed" 3
-		# [patch: thepkg-upgrade] add action -> already installed
 	}
 	log "Extracting the pkg '$thepkgname'..."
 	mkdir -v "$THEPKG_DBPATH/$thepkgname"
@@ -80,17 +65,15 @@ add)
 
 			# tar opts:
 			tar_opts=k
-			# [patch: thepkg-addfromtar]
 
-			tar_file=- # [patch: thepkg-addfromtar]
+			tar_file=-
 
-			tar_directory=${THEPKG_PREFIX:-/} # [patch: thepkg-subdir-prefix] tar opts
+			tar_directory=${THEPKG_PREFIX:-/}
 
 			# manifest writing -> pre tar extractind
-			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory" # [patch: thepkg-addfromtar]
+			tar -xvf "$tar_file" -"$tar_opts" -C "$tar_directory"
 
 		# manifest writing -> post tar extractind
-		# [patch: thepkg-subdir-prefix] manifest writing -> post tar extractind
 		} | {
 			tee /dev/stderr
 		} | {
@@ -100,15 +83,12 @@ add)
 		}
 	} > "$THEPKG_DBPATH/$thepkgname"/manifest
 	# post manifest, metadata writing:
-	# [patch: thepkg-metadata-thepkg-ext] post manifest, metadata writing
-	# [patch: thepkg-thepkgver-arg-parsing] post manifest, metadata writing
 
 	# thepkg post install:
-	# [patch: thepkg-addfromtar] thepkg post install
 
 	# test -s   exists and has a size greater than zero
 	[ -s "$THEPKG_DBPATH/$thepkgname"/manifest ] || {
-		err "empty or missing manifest file." # [patch: thepkg-extended-verbose]
+		err "empty or missing manifest file." 3
 	}
 	;;
 del)
@@ -116,22 +96,20 @@ del)
 		err "The pkg '$thepkgname' is not installed" 2
 	}
 	manifest_path=$THEPKG_DBPATH/$thepkgname/manifest
+
 	# thepkg pre del
-	# [patch: thepkg-rmfailed] pre del
 	
 	log "Removing the pkg '$thepkgname'..."
 	(
 		cd "${THEPKG_PREFIX:-/}" || exit
 		while IFS= read -r file || case $file in '') false; esac; do
 			case $file in
-				# [patch: thepkg-keep-etc] del action -> case
 				*/)
 					rmdir "$file" 2>/dev/null || :
 				;;
 				*)
 					rm -v "$file" || {
 						# thepkg del rm failed
-						# [patch: thepkg-rmfailed] thepkg del rm failed
 						false
 					}
 				;;
@@ -140,11 +118,11 @@ del)
 	) < "$manifest_path"
 	
 	rm -v "$manifest_path"
+
+
 	# thepkg post manifest removal:
-	# [patch: thepkg-metadata-thepkg-ext] thepkg post manifest removal
-	# [patch: thepkg-thepkgver-arg-parsing] thepkg post manifest removal
 
 	rmdir -v "$THEPKG_DBPATH/$thepkgname"
 	;;
-*) err "see --help";;
+*) err "unknown: '$1'";;
 esac
