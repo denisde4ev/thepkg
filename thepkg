@@ -12,12 +12,12 @@ set -eu
 
 
 # log fns:
-log() { printf %s\\n " -> $1"; }
+log() { printf %s\\n >&2 " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkgconfig_noerr_stat0]
 
 
 # args parsing:
-case $1 in
+case ${1-} in
 	-h|--help)
 		printf %s\\n \
 			"Usage: <STDIN thepkgname.tar> | ${0##*/} <add|del> <thepkgname>" \
