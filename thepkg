@@ -7,7 +7,7 @@ case $1 in -x) set -x; shift; esac # debug opt
 # [patch: thepkg-subdir-prefix] thepkg config / env vars
 
 
-set -e
+set -eu
 
 # env parsing:
 # [patch: thepkg-subdir-prefix] env parsing
@@ -19,13 +19,13 @@ set -e
 
 
 # thepkg log fns:
-log() { printf %s\\n " -> $1"; }
+log() { printf %s\\n >&2 " -> $1"; }
 err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; } # [patch: thepkg-noerr-stat0]
 
 
 ####			"patches applyed: {TODO: for now not separated per package path for help info}" \
 # args parsing:
-case $1 in
+case ${1-} in
 	-h|--help)
 		printf %s\\n \
 			"Usage: ${0##*/} <add|del> </path/to/thepkgname.tar.qz | thepkgname.tar | thepkgname>" \
