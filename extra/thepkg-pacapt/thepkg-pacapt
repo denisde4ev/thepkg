@@ -105,7 +105,7 @@ op_Qo() {
 			printf %s\\n >&2 "E: cant find absolute path for '$i'"
 			continue
 		}
-		j=${j#"$THEPKG_PREFIX"}; j=${j#"/"} # note: this will fail if bin from package have been installed in symlink ( for example /bin symlink to /usr/bin )
+		j=${j#"$THEPKG_PREFIX"}; j=${j#"${THEPKG_PREFIX:+/}"} # note: this will fail if bin from package have been installed in symlink ( for example /bin symlink to /usr/bin )
 
 		case $op in
 			-Qo)
