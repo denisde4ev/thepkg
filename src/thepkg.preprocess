@@ -183,10 +183,10 @@ add)
 !| case ${THEPKGCONFIG_SUBDIR_PREFIX+x} in x)
 		} | {
 			case $THEPKG_SUBDIR_PREFIX in
-			*)
+			'')
 				cat
 				;;
-			'')
+			*)
 				while IFS= read -r file; do printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; done
 				case $file in ?*) printf %s\\n "$THEPKG_SUBDIR_PREFIX/$file"; esac
 				;;
