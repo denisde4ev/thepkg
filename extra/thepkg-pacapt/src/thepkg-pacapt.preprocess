@@ -1,5 +1,8 @@
 #!/usr/bin/env pp
 #!/bin/sh
+
+# add 20 new lines to idicate the file have build by source (+ keep this comment)
+!! seq 20 | tr -dc \\n
 set -eu
 !!
 !! case $__FILE__ in */*) cd "${__FILE__%/*}"; esac || exit

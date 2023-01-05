@@ -1,4 +1,26 @@
 #!/bin/sh
+
+# add 20 new lines to idicate the file have build by source (+ keep this comment)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 set -eu
 
 case ${1?specify operation, see --help} in
