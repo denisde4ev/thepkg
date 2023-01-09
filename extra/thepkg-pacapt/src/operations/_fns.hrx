@@ -1,3 +1,8 @@
+<==>
+!! # FILE NOTES:
+!! # this file is never extracted. and its read 2 times:
+!! # 1. '!!' are preprocess executed (and only this, no propper `pp` execution is used)
+!! # 2. HRX header are never used an removed and lines begining with '!!' are also removed and everithing else added to output file
 <==> S
 !! ops="$ops${ops:+ }-S"
 op_S() {
@@ -10,16 +15,21 @@ op_S() {
 <==> Q
 !! ops="$ops${ops:+ }-Q"
 op_Q() {
+	x_err=0
+	x_err() {
+		printf %s\\n "$1 \$?: $?"
+		x_err=5
+	}
+
 	case $# in 0)
 		case $op in
-			-Q) ls -FA1 -- "$THEPKG_DBPATH"; return;;
-			-Qq) ( cd "$THEPKG_DBPATH" && printf %s\\n * ); return;;
+			-Q) ls -FA1 -- "$THEPKG_DBPATH" || x_err ls; return $x_err;;
+			-Qq) ( cd "$THEPKG_DBPATH" && printf %s\\n * ) || x_err 'cd&&printf'; return $x_err;;
 			-Qi|-Ql|-Qlq) set -- "$THEPKG_DBPATH"/*;;
 		esac
 	esac
 
-	x=0
-	x_input=1
+	x_missing=0
 	while case $# in 0) false; esac; do i=$1
 		case $i in -) input_i || return; esac
 
@@ -30,21 +40,26 @@ op_Q() {
 
 		if [ -e "$j" ]; then
 			case $op in
-				-Q) ls -FA1 -d -- "$j";;
+				-Q) ls -FA1 -d -- "$j" || x_err ls;;
 				-Qq) printf %s\\n "$i";;
-				-Qi) printf %s\\n "$j:"; ls -FA1 -- "$j"; echo;;
-				-Ql) printf %s\\n "$j:"; cat "$j/manifest"; echo;;
-				-Qlq) cat "$j/manifest";;
-			esac
+				-Qi) printf %s\\n "$j:"; ls -FA1 -- "$j" || x_err ls; echo;;
+				-Ql) printf %s\\n "$j:"; cat "$j/manifest" || x_err cat; echo;;
+				-Qlq) cat "$j/manifest" || x_err cat;;
+			esac || { printf %s\\n "\$?: $?"; x_err=5; }
 		else
 			printf %s\\n "E: pkg not installed: '$i'" >&2
-			x=1
+			x_missing=1
 		fi
 
 	shift; done
-	return "$x"
+	case $x_missing:$x_err in
+		0:0) ;;
+		0:*) return $x_err;;
+		*:0) return $x_missing;;
+		*:*) return 15;; # 15=0b1111=0xf when multiple errors
+	esac
 }
-!!
+
 !! # todo: consider optimizing by adding `case in -Qq|Qi|...) op_Q`
 !! ops="$ops${ops:+ }-Qq -Qi -Ql -Qlq"
 op_Qq(){ op_Q "$@";}
@@ -58,7 +73,9 @@ op_Qo() {
 	x=0
 	cd "$THEPKG_DBPATH" || return
 
-	while case $# in 0) false; esac; do i=$1
+	unset i
+	while case $# in 0) false; esac
+	do ${i+shift}; i=$1
 		case $i in -) input_i || return; esac
 
 		case $i in
@@ -93,7 +110,7 @@ op_Qo() {
 				esac
 			;;
 		esac
-	shift; done
+	done
 	return "$x"
 }
 op_Qoq(){ op_Qo "$@";}
