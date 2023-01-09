@@ -1,0 +1,51 @@
+#!/bin/sh
+set -eu
+
+: "${THEPKG_PREFIX:=""}"
+: "${THEPKG_DBPATH:="$THEPKG_PREFIX/var/db/thepkg"}"
+: "${THEPKG_SUBDIR_PREFIX:=""}"
+
+case ${1-} in --help)
+	printf %s\\n \
+		"Usage: ${0##*/} [./origin-file] <file-name | /path/file> [thepkgname]" \
+		"  if only basename provided, then will use /usr/bin/ as parent path" \
+		"  all paths are inside THEPKG_PREFIX path (but may escape if '../' used)" \
+		"  origin file is only used when 3 args provided" \
+		"  origin-file may be '-' for stdin and its extensable to chmod and chown by '-:755:root:root'" \
+	;
+	exit
+esac
+
+log() { printf %s\\n " -> $1"; }
+err() { printf %s\\n >&2 " x> $1"; exit ${2-2}; }
+#die() { printf %s\\n >&2 "${1-see --help, for usage}"; exit ${2-2}; }
+
+case $# in
+	3) originfile=$1; shift;;
+	*) unset originfilee;;
+esac
+
+file_path=${1?}
+thepkgname=${2-${1##*/}}
+case $# in [21]) shift $#;; *) printf %s\\n 'see --help, for usage' >&2; exit; esac
+
+
+[ ! -e "$file_path" ] || err "file path: '$file_path' already exits" 3
+
+[ -d "$THEPKG_DBPATH/$thepkgname" ] ||  mkdir -pv -- "$THEPKG_DBPATH/$thepkgname"
+
+target_path=$THEPKG_PREFIX/${THEPKG_SUBDIR_PREFIX:+$THEPKG_SUBDIR_PREFIX/}$file_path
+case ${originfile-} in
+	-|-:*)
+		cat > "$target_path"
+		case $originfile in -:*)
+			originfile=${originfile#-:}
+			chmod -v "${originfile%%:*}" -- "$target_path"
+			case $originfile in *:*)
+				chown -v "${originfile#*:}" -- "$target_path" 
+			esac
+		esac
+	;;
+	*) cp -av -- "${originfile-$file_path}" "$THEPKG_PREFIX/${THEPKG_SUBDIR_PREFIX:+$THEPKG_SUBDIR_PREFIX/}$file_path";; # note: wont mkdir for dirname of file_path, leave native error
+esac
+printf %s\\n "${THEPKG_SUBDIR_PREFIX:+$THEPKG_SUBDIR_PREFIX/}$file_path" >> "$THEPKG_DBPATH/$thepkgname"/manifest
