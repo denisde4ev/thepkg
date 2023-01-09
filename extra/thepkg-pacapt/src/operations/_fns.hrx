@@ -1,8 +1,8 @@
 <==>
 !! # FILE NOTES:
 !! # this file is never extracted. and its read 2 times:
-!! # 1. '!!' are preprocess executed (and only this, no propper `pp` execution is used)
-!! # 2. HRX header are never used an removed and lines begining with '!!' are also removed and everithing else added to output file
+!! # 1. '!!' are preprocess executed (and only this, no propper `pp` execution is used) {TODO: its not done (for now its faked/hardcoded)}
+!! # 2. HRX header are never used and removed  and lines begining with '!!' are also removed and everithing else added to output file
 <==> S
 !! ops="$ops${ops:+ }-S"
 op_S() {
@@ -30,7 +30,10 @@ op_Q() {
 	esac
 
 	x_missing=0
-	while case $# in 0) false; esac; do i=$1
+	while
+		${i+shift}
+		case $# in 0) false; esac;
+	do i=$1
 		case $i in -) input_i || return; esac
 
 		case $i in
@@ -51,7 +54,7 @@ op_Q() {
 			x_missing=1
 		fi
 
-	shift; done
+	done
 	case $x_missing:$x_err in
 		0:0) ;;
 		0:*) return $x_err;;
@@ -74,8 +77,10 @@ op_Qo() {
 	cd "$THEPKG_DBPATH" || return
 
 	unset i
-	while case $# in 0) false; esac
-	do ${i+shift}; i=$1
+	while
+		${i+shift}
+		case $# in 0) false; esac
+	do i=$1
 		case $i in -) input_i || return; esac
 
 		case $i in

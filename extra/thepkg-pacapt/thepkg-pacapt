@@ -87,7 +87,10 @@ op_Q() {
 	esac
 
 	x_missing=0
-	while case $# in 0) false; esac; do i=$1
+	while
+		${i+shift}
+		case $# in 0) false; esac;
+	do i=$1
 		case $i in -) input_i || return; esac
 
 		case $i in
@@ -108,7 +111,7 @@ op_Q() {
 			x_missing=1
 		fi
 
-	shift; done
+	done
 	case $x_missing:$x_err in
 		0:0) ;;
 		0:*) return $x_err;;
@@ -129,7 +132,7 @@ op_Qo() {
 
 	unset i
 	while
-		${i+shift};
+		${i+shift}
 		case $# in 0) false; esac
 	do i=$1
 		case $i in -) input_i || return; esac
@@ -139,7 +142,7 @@ op_Qo() {
 			*) j=$(which 2>/dev/null "$i") && case $j in */*) ;; *) false; esac;;
 		esac || {
 			x=1
-			printf %s\\n >&2 "E: cant find absolute path for command: '$i'"
+			printf %s\\n >&2 "E: cant find absolute path for '$i'"
 			continue
 		}
 		j=${j#"$THEPKG_PREFIX"}; j=${j#"${THEPKG_PREFIX:+/}"} # note: this will fail if bin from package have been installed in symlink ( for example /bin symlink to /usr/bin )
